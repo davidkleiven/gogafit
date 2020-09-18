@@ -1,6 +1,8 @@
 package gafit
 
 import (
+	"math"
+	"math/rand"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -135,5 +137,28 @@ func TestVectorEqual(t *testing.T) {
 		if got != test.want {
 			t.Errorf("Test #%d: Got %v want %v\n", i, got, test.want)
 		}
+	}
+}
+
+func TestRmse(t *testing.T) {
+	X := mat.NewDense(10, 4, nil)
+	y := mat.NewVecDense(10, nil)
+	src := rand.NewSource(42)
+	rng := rand.New(src)
+	std := 0.1
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 4; j++ {
+			X.Set(i, j, math.Pow(0.1*float64(i), float64(j)))
+		}
+		y.SetVec(i, 5.0*X.At(i, 0)-2.0*X.At(i, 2)+std*rng.NormFloat64())
+	}
+
+	coeff := mat.NewVecDense(4, []float64{5.0, 0.0, -2.0, 0.0})
+	rmse := Rmse(X, y, coeff)
+
+	// RMSE should be close to the std
+	f := 0.05
+	if math.Abs(rmse-std) > f*std {
+		t.Errorf("Expected %f +- %f. Got %f\n", std, f*std, rmse)
 	}
 }

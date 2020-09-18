@@ -11,18 +11,16 @@ import (
 // LinearModelConfig contains static configuration for a linear model
 // It contains meta-information needed to fully define a LinearModel
 type LinearModelConfig struct {
-	Design       *mat.Dense
-	Target       *mat.VecDense
+	Data         Dataset
 	Cost         CostFunction
 	MutationRate float64
-	NumSplits    int
+	NumSplits    uint
 }
 
 // IsEqual if other is equal to lmc, return true. Otherwise, return false.
 func (lmc LinearModelConfig) IsEqual(other LinearModelConfig) bool {
 	tol := 1e-6
-	return matrixEqual(lmc.Design, other.Design, tol) &&
-		vectorEqual(lmc.Target, other.Target, tol) &&
+	return lmc.Data.IsEqual(other.Data) &&
 		(math.Abs(lmc.MutationRate-other.MutationRate) < tol) &&
 		(lmc.NumSplits == other.NumSplits)
 }
@@ -30,18 +28,18 @@ func (lmc LinearModelConfig) IsEqual(other LinearModelConfig) bool {
 // LinearModel represent a genome
 type LinearModel struct {
 	Config  LinearModelConfig
-	include []int
+	Include []int
 }
 
 // IsEqual returns true of the two models are equal
 func (l *LinearModel) IsEqual(other LinearModel) bool {
-	return l.Config.IsEqual(other.Config) && AllEqualInt(l.include, other.include)
+	return l.Config.IsEqual(other.Config) && AllEqualInt(l.Include, other.Include)
 }
 
-func (l *LinearModel) includedCols() []int {
+func (l *LinearModel) IncludedCols() []int {
 	cols := []int{}
-	for i := range l.include {
-		if l.include[i] == 1 {
+	for i := range l.Include {
+		if l.Include[i] == 1 {
 			cols = append(cols, i)
 		}
 	}
@@ -58,45 +56,103 @@ func (l *LinearModel) MutationRate() float64 {
 	return l.Config.MutationRate
 }
 func (l *LinearModel) subMatrix() *mat.Dense {
-	rows, _ := l.Config.Design.Dims()
-	cols := l.includedCols()
+	rows, _ := l.Config.Data.X.Dims()
+	cols := l.IncludedCols()
 
 	subMat := mat.NewDense(rows, len(cols), nil)
 	for i := 0; i < rows; i++ {
 		for j := range cols {
-			subMat.Set(i, j, l.Config.Design.At(i, cols[j]))
+			subMat.Set(i, j, l.Config.Data.X.At(i, cols[j]))
 		}
 	}
 	return subMat
 }
 
+// IsEmpty returns true if the model contains no features
+func (l *LinearModel) IsEmpty() bool {
+	for i := range l.Include {
+		if l.Include[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (l *LinearModel) flipRandomIfEmpty(rng *rand.Rand) {
+	if l.IsEmpty() {
+		l.Include[rng.Int31n(int32(len(l.Include)))] = 1
+	}
+
+}
+
 // Evaluate evaluates the fitness
 func (l *LinearModel) Evaluate() (float64, error) {
+	if l.IsEmpty() {
+		panic("The model is empty.")
+	}
+
 	subMat := l.subMatrix()
-	coeff := Fit(subMat, l.Config.Target)
-	return l.Config.Cost(l.subMatrix(), l.Config.Target, coeff), nil
+	coeff := Fit(subMat, l.Config.Data.Y)
+	return l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff), nil
 }
 
 // Mutate introduces mutations
 func (l *LinearModel) Mutate(rng *rand.Rand) {
-	for i := range l.include {
+	for i := range l.Include {
 		if rng.Float64() < l.Config.MutationRate {
-			l.include[i] = (l.include[i] + 1) % 2
+			l.Include[i] = (l.Include[i] + 1) % 2
 		}
 	}
+	l.flipRandomIfEmpty(rng)
 }
 
 // Clone create a copy
 func (l *LinearModel) Clone() eaopt.Genome {
 	model := LinearModel{
 		Config:  l.Config,
-		include: make([]int, len(l.include)),
+		Include: make([]int, len(l.Include)),
 	}
-	copy(model.include, l.include)
+	copy(model.Include, l.Include)
 	return &model
+}
+
+// NumSplits returns the number of splits used in cross over. If not, set
+// 2 is used as default
+func (l *LinearModel) NumSplits() uint {
+	if l.Config.NumSplits == 0 {
+		return 2
+	}
+	return l.Config.NumSplits
 }
 
 // Crossover performs a cross over
 func (l *LinearModel) Crossover(other eaopt.Genome, rng *rand.Rand) {
-	eaopt.CrossGNXInt(l.include, other.(*LinearModel).include, 2, rng)
+	eaopt.CrossGNXInt(l.Include, other.(*LinearModel).Include, l.NumSplits(), rng)
+
+	// Make sure none og genomes are empty
+	l.flipRandomIfEmpty(rng)
+	other.(*LinearModel).flipRandomIfEmpty(rng)
+}
+
+// LinearModelFactory produces random models
+type LinearModelFactory struct {
+	Config LinearModelConfig
+}
+
+// Generate creates a new random linear model
+func (lmf *LinearModelFactory) Generate(rng *rand.Rand) eaopt.Genome {
+	model := LinearModel{
+		Config:  lmf.Config,
+		Include: make([]int, lmf.Config.Data.NumFeatures()),
+	}
+
+	for i := range model.Include {
+		if rng.Float64() < 0.5 {
+			model.Include[i] = 1
+		} else {
+			model.Include[i] = 0
+		}
+	}
+	model.flipRandomIfEmpty(rng)
+	return &model
 }
