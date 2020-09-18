@@ -11,15 +11,17 @@ import (
 func completeModel() LinearModel {
 	return LinearModel{
 		Config: LinearModelConfig{
-			Design: mat.NewDense(2, 2, []float64{1.0, 2.0, 1.0, -1.0}),
-			Target: mat.NewVecDense(2, []float64{4.0, -3.0}),
+			Data: Dataset{
+				X: mat.NewDense(2, 2, []float64{1.0, 2.0, 1.0, -1.0}),
+				Y: mat.NewVecDense(2, []float64{4.0, -3.0}),
+			},
 			Cost: func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 				return 0.0
 			},
 			MutationRate: 0.3,
 			NumSplits:    1,
 		},
-		include: []int{1, 1},
+		Include: []int{1, 1},
 	}
 }
 
@@ -45,10 +47,12 @@ func TestMutationRate(t *testing.T) {
 func TestSubMatrix(t *testing.T) {
 	model := LinearModel{
 		Config: LinearModelConfig{
-			Design: mat.NewDense(2, 7, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
-				8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}),
+			Data: Dataset{
+				X: mat.NewDense(2, 7, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
+					8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}),
+			},
 		},
-		include: []int{0, 0, 1, 0, 1, 0, 1},
+		Include: []int{0, 0, 1, 0, 1, 0, 1},
 	}
 
 	want := mat.NewDense(2, 3, []float64{3.0, 5.0, 7.0, 10.0, 12.0, 14.0})
@@ -75,7 +79,9 @@ func TestEqual(t *testing.T) {
 		{
 			Mod1: LinearModel{
 				Config: LinearModelConfig{
-					Design: mat.NewDense(2, 1, []float64{2.0, 3.0}),
+					Data: Dataset{
+						X: mat.NewDense(2, 1, []float64{2.0, 3.0}),
+					},
 				},
 			},
 			Mod2:   LinearModel{},
@@ -99,13 +105,13 @@ func TestClone(t *testing.T) {
 
 func TestMutate(t *testing.T) {
 	model := completeModel()
-	original := make([]int, len(model.include))
-	copy(original, model.include)
+	original := make([]int, len(model.Include))
+	copy(original, model.Include)
 
 	model.Config.MutationRate = 0.99
 	model.Mutate(rng())
 
-	if AllEqualInt(original, model.include) {
+	if AllEqualInt(original, model.Include) {
 		t.Errorf("Bits were not mutated")
 	}
 }
@@ -114,34 +120,34 @@ func TestCrossOver(t *testing.T) {
 	model := completeModel()
 	model2 := completeModel()
 
-	// artificially make the include arrays longer
-	model.include = make([]int, 100)
-	model2.include = make([]int, 100)
+	// artificially make the Include arrays longer
+	model.Include = make([]int, 100)
+	model2.Include = make([]int, 100)
 	r := rng()
 	for i := 0; i < 100; i++ {
 		if r.Float64() < 0.5 {
-			model.include[i] = 1
+			model.Include[i] = 1
 		} else {
-			model.include[i] = 0
+			model.Include[i] = 0
 		}
 
 		if r.Float64() < 0.5 {
-			model2.include[i] = 1
+			model2.Include[i] = 1
 		} else {
-			model2.include[i] = 0
+			model2.Include[i] = 0
 		}
 	}
-	model2.include[0] = 0
+	model2.Include[0] = 0
 
-	orig := make([]int, len(model.include))
-	copy(orig, model.include)
+	orig := make([]int, len(model.Include))
+	copy(orig, model.Include)
 
-	orig2 := make([]int, len(model2.include))
-	copy(orig2, model2.include)
+	orig2 := make([]int, len(model2.Include))
+	copy(orig2, model2.Include)
 
 	model.Crossover(&model2, r)
 
-	if AllEqualInt(orig, model.include) || AllEqualInt(orig2, model2.include) {
+	if AllEqualInt(orig, model.Include) || AllEqualInt(orig2, model2.Include) {
 		t.Errorf("Crossover did not alter model")
 	}
 }

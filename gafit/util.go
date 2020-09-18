@@ -1,11 +1,61 @@
 package gafit
 
 import (
+	"math"
+
 	"gonum.org/v1/gonum/mat"
 )
 
+const log2pi = 1.83787706641
+
 // CostFunction is a type used to represent cost functions for fitting
 type CostFunction func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64
+
+// Aic returns Afaike's information criteria
+func Aic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	k := float64(coeff.Len())
+	logL := LogLikelihood(X, y, coeff)
+	return 2.0*k - 2.0*logL
+}
+
+// LogLikelihood returns the logarithm of the likelihood function, assuming normal distributed
+// variable
+func LogLikelihood(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	rss := Rss(X, y, coeff)
+	n := float64(y.Len())
+	if rss < 1e-10 {
+		rss = 1e-10
+	}
+	return -0.5 * n * (log2pi + 1.0 + math.Log(rss/n))
+}
+
+// Aicc returns the corrected Afaike's information criteria
+func Aicc(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	k := float64(coeff.Len())
+	n := float64(y.Len())
+
+	denum := n - k - 1
+	if denum < 1 {
+		denum = 1
+	}
+	return Aic(X, y, coeff) + 2*k*(k+1)/denum
+}
+
+// Rss returns the residual sum of square
+func Rss(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	pred := Pred(X, coeff)
+	rss := 0.0
+	for i := 0; i < pred.Len(); i++ {
+		rss += math.Pow(pred.AtVec(i)-y.AtVec(i), 2)
+	}
+	return rss
+}
+
+// Rmse returns the residual mean square error
+func Rmse(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	n := float64(y.Len())
+	return math.Sqrt(Rss(X, y, coeff) / n)
+}
 
 // Pred predicts the outcome of the linear model
 func Pred(X *mat.Dense, coeff *mat.VecDense) *mat.VecDense {
@@ -34,6 +84,18 @@ func AllEqualInt(s1 []int, s2 []int) bool {
 		return false
 	}
 
+	for i := range s1 {
+		if s1[i] != s2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func allEqualString(s1 []string, s2 []string) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
 	for i := range s1 {
 		if s1[i] != s2[i] {
 			return false
