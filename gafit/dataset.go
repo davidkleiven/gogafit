@@ -43,3 +43,17 @@ func (data Dataset) IncludedFeatures(indicator []int) []string {
 	}
 	return names
 }
+
+// Dot perform dot product between X and a sparse coefficient vector
+// given as a map of strings, where the key is a column name
+func (data Dataset) Dot(coeff map[string]float64) *mat.VecDense {
+	coeffVec := mat.NewVecDense(data.NumFeatures(), nil)
+	for i, key := range data.ColNames {
+		if v, ok := coeff[key]; ok {
+			coeffVec.SetVec(i, v)
+		}
+	}
+	res := mat.NewVecDense(data.NumData(), nil)
+	res.MulVec(data.X, coeffVec)
+	return res
+}

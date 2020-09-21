@@ -24,6 +24,7 @@ func Read(fname string, targetName string) (Dataset, error) {
 
 // ReadFile creates a dataset from the passed file
 func ReadFile(csvfile *os.File, targetName string) (Dataset, error) {
+	targetName = strings.TrimSpace(targetName)
 	r := csv.NewReader(csvfile)
 	data := Dataset{}
 

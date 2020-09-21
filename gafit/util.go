@@ -73,8 +73,24 @@ func Pred(X *mat.Dense, coeff *mat.VecDense) *mat.VecDense {
 // Fit returns the solution of X*c = y
 func Fit(X *mat.Dense, y *mat.VecDense) *mat.VecDense {
 	_, c := X.Dims()
+	var svd mat.SVD
+	svd.Factorize(X, mat.SVDThin)
+
+	s := svd.Values(nil)
+	var u, v mat.Dense
+	svd.UTo(&u)
+	svd.VTo(&v)
+
+	var uTdoty mat.VecDense
+	uTdoty.MulVec(u.T(), y)
+
+	lamb := 1e-8
+	for i := 0; i < len(s); i++ {
+		invSigma := s[i] / (s[i]*s[i] + lamb)
+		uTdoty.SetVec(i, uTdoty.At(i, 0)*invSigma)
+	}
 	coeff := mat.NewVecDense(c, nil)
-	coeff.SolveVec(X, y)
+	coeff.MulVec(&v, &uTdoty)
 	return coeff
 }
 

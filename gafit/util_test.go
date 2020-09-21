@@ -9,7 +9,7 @@ import (
 )
 
 func TestFit(t *testing.T) {
-	tol := 1e-8
+	tol := 1e-7
 	for i, test := range []struct {
 		X      *mat.Dense
 		Y      *mat.VecDense

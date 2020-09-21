@@ -36,6 +36,8 @@ func (l *LinearModel) IsEqual(other LinearModel) bool {
 	return l.Config.IsEqual(other.Config) && AllEqualInt(l.Include, other.Include)
 }
 
+// IncludedCols return the index of the columns that are included according to the
+// 1/0 values in inclue (1: included, 0: excluded)
 func (l *LinearModel) IncludedCols() []int {
 	cols := []int{}
 	for i := range l.Include {
@@ -85,14 +87,19 @@ func (l *LinearModel) flipRandomIfEmpty(rng *rand.Rand) {
 
 }
 
+// GetCoeff return the coefficients corresponding to the current selection
+func (l *LinearModel) GetCoeff() *mat.VecDense {
+	subMat := l.subMatrix()
+	return Fit(subMat, l.Config.Data.Y)
+}
+
 // Evaluate evaluates the fitness
 func (l *LinearModel) Evaluate() (float64, error) {
 	if l.IsEmpty() {
 		panic("The model is empty.")
 	}
 
-	subMat := l.subMatrix()
-	coeff := Fit(subMat, l.Config.Data.Y)
+	coeff := l.GetCoeff()
 	return l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff), nil
 }
 
@@ -137,6 +144,18 @@ func (l *LinearModel) Crossover(other eaopt.Genome, rng *rand.Rand) {
 // LinearModelFactory produces random models
 type LinearModelFactory struct {
 	Config LinearModelConfig
+
+	// Probability of initialition each features. If not, set default value of 0.5
+	// is used. Example: a value of 0.2 will lead to 20% of all features being included
+	// in the initial pool
+	Prob float64
+}
+
+func (lmf *LinearModelFactory) probability() float64 {
+	if lmf.Prob < 1e-16 {
+		return 0.5
+	}
+	return lmf.Prob
 }
 
 // Generate creates a new random linear model
@@ -147,7 +166,7 @@ func (lmf *LinearModelFactory) Generate(rng *rand.Rand) eaopt.Genome {
 	}
 
 	for i := range model.Include {
-		if rng.Float64() < 0.5 {
+		if rng.Float64() < lmf.probability() {
 			model.Include[i] = 1
 		} else {
 			model.Include[i] = 0
