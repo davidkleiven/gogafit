@@ -8,7 +8,8 @@ type Dataset struct {
 	Y *mat.VecDense
 
 	// ColNames gives the name of the "feature" stored in each column of X
-	ColNames []string
+	ColNames   []string
+	TargetName string
 }
 
 // IsEqual returns true if the two dataseta are equal
