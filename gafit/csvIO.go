@@ -120,3 +120,52 @@ func removeIndex(x []float64, idx int) ([]float64, float64) {
 	x = x[:len(x)-1]
 	return x, value
 }
+
+// Write writes a datset to file. The target values are appended as the last column
+func Write(fname string, X *mat.Dense, y *mat.VecDense, featNames []string, targetName string) error {
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return WriteFile(f, X, y, featNames, targetName)
+}
+
+// WriteFile writes dataset to file
+func WriteFile(f *os.File, X *mat.Dense, y *mat.VecDense, featNames []string, targetName string) error {
+	r, c := X.Dims()
+	if r != y.Len() {
+		return errors.New("Length of y must be equal to the number of rows in X")
+	}
+
+	if len(featNames) != c {
+		return errors.New("Length of featNames must be equal to the number of columns in X")
+	}
+
+	writer := csv.NewWriter(f)
+	defer writer.Flush()
+
+	// Write the header, where target name is appended to the end
+	record := make([]string, len(featNames)+1)
+	copy(record, featNames)
+	record[len(record)-1] = targetName
+
+	err := writer.Write(record)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < y.Len(); i++ {
+		for j := 0; j < c; j++ {
+			v := strconv.FormatFloat(X.At(i, j), 'f', 8, 64)
+			record[j] = v
+		}
+		v := strconv.FormatFloat(y.AtVec(i), 'f', 8, 64)
+		record[len(record)-1] = v
+		err = writer.Write(record)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
