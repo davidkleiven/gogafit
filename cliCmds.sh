@@ -12,3 +12,7 @@ echo "Test ttsplit"
 go run main.go ttsplit -d $DATAFILE -f 0.2
 rm "${FOLDER}/dataset_train.csv"
 rm "${FOLDER}/dataset_test.csv"
+
+echo "Testing ELM command"
+go run main.go elm -d $DATAFILE -y Var4 -r 20 -s 10
+rm "${FOLDER}/dataset_elm.csv"
