@@ -83,7 +83,7 @@ gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
 		}
 		log.Printf("Using %s as target column\n", target)
 
-		coeffFile, err := cmd.Flags().GetString("coeff")
+		coeffFile, err := cmd.Flags().GetString("model")
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
