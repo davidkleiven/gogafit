@@ -248,13 +248,14 @@ func saveModel(fname string, model Model) error {
 
 func model(best eaopt.Individual, dataset gafit.Dataset, cost string, datafile string) Model {
 	bestMod := best.Genome.(*gafit.LinearModel)
-	coeff := bestMod.GetCoeff().RawVector().Data
-	features := dataset.IncludedFeatures(bestMod.Include)
+	res := bestMod.Optimize()
+	coeff := res.Coeff.RawVector().Data
+	features := dataset.IncludedFeatures(res.Include)
 	model := Model{
 		Datafile: datafile,
 		Score: Score{
 			Name:  cost,
-			Value: best.Fitness,
+			Value: res.Score,
 		},
 		Coeffs: join2map(features, coeff),
 	}
