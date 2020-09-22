@@ -98,9 +98,35 @@ func (l *LinearModel) Evaluate() (float64, error) {
 	if l.IsEmpty() {
 		panic("The model is empty.")
 	}
+	return l.Optimize(), nil
+}
 
+// Optimize flips all inclusions in. After a call to this
+// function, the included features are affected and set to the best genome
+func (l *LinearModel) Optimize() float64 {
+	bestInclude := make([]int, len(l.Include))
+	copy(bestInclude, l.Include)
 	coeff := l.GetCoeff()
-	return l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff), nil
+	bestScore := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
+
+	for i := range l.Include {
+		old := l.Include[i]
+		l.Include[i] = (old + 1) % 2
+
+		if !l.IsEmpty() {
+			coeff := l.GetCoeff()
+			score := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
+			if score < bestScore {
+				copy(bestInclude, l.Include)
+				bestScore = score
+			}
+		}
+		l.Include[i] = old
+	}
+
+	// Set the best model
+	copy(l.Include, bestInclude)
+	return bestScore
 }
 
 // Mutate introduces mutations
