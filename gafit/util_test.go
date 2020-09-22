@@ -162,3 +162,65 @@ func TestRmse(t *testing.T) {
 		t.Errorf("Expected %f +- %f. Got %f\n", std, f*std, rmse)
 	}
 }
+
+func TestHatMatrix(t *testing.T) {
+	for i, test := range []struct {
+		X    *mat.Dense
+		want mat.Matrix
+	}{
+		// When X is square, the hat matrix should be equal to the identity matrix
+		{
+			X:    mat.NewDense(2, 2, []float64{1.0, 2.0, 3.0, 4.0}),
+			want: mat.NewDiagDense(2, []float64{1.0, 1.0}),
+		},
+		// Num cols larger than num rows, hat matrix should be identify
+		{
+			X:    mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}),
+			want: mat.NewDiagDense(2, []float64{1.0, 1.0}),
+		},
+		// Num rows larger than num cols. Expected hat matrix calculated with Numpy
+		{
+			X: mat.NewDense(3, 2, []float64{1.0, 0.0, 1.0, 1.0, 1.0, 2.0}),
+			want: mat.NewDense(3, 3, []float64{0.83333333, 0.33333333, -0.16666667,
+				0.33333333, 0.33333333, 0.33333333,
+				-0.16666667, 0.33333333, 0.83333333}),
+		},
+	} {
+		H := HatMatrix(test.X)
+
+		if !mat.EqualApprox(H, test.want, 1e-8) {
+			t.Errorf("Test #%d: Want\n%v\ngot\n%v\n", i, mat.Formatted(test.want), mat.Formatted(H))
+		}
+	}
+}
+
+func TestSubmatrixView(t *testing.T) {
+	sub := SubMatrix{
+		X:    mat.NewDense(3, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}),
+		Rows: 2,
+		Cols: 3,
+	}
+
+	r, c := sub.Dims()
+	if (r != 2) || (c != 3) {
+		t.Errorf("Expected (2, 3) got (%d, %d)\n", r, c)
+	}
+
+	want := mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0})
+	got := mat.NewDense(2, 3, nil)
+	for i := 0; i < r; i++ {
+		for j := 0; j < c; j++ {
+			got.Set(i, j, sub.At(i, j))
+		}
+	}
+
+	if !mat.EqualApprox(want, got, 1e-10) {
+		t.Errorf("Want\n%v\ngot\n%v\n", want, got)
+	}
+
+	subT := sub.T()
+
+	if !mat.EqualApprox(subT, want.T(), 1e-10) {
+		t.Errorf("Want\n%v\ngot\n%v\n", want.T(), subT)
+	}
+}
