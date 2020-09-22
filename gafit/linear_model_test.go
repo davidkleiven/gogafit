@@ -103,6 +103,24 @@ func TestClone(t *testing.T) {
 	}
 }
 
+func TestOptimize(t *testing.T) {
+	model := completeModel()
+
+	// Confirm that model is unchagned after optimize
+	origMod := model.Clone().(*LinearModel)
+	res1 := model.Optimize()
+
+	if !model.IsEqual(*origMod) {
+		t.Errorf("Model changes after call to optimize")
+	}
+
+	res2 := model.Optimize()
+
+	if !res1.IsEqual(res2) {
+		t.Errorf("Two successive calls yields different results")
+	}
+}
+
 func TestMutate(t *testing.T) {
 	model := completeModel()
 	original := make([]int, len(model.Include))

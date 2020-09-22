@@ -108,22 +108,31 @@ func (l *LinearModel) Optimize() OptimizeResult {
 	copy(bestInclude, l.Include)
 	bestCoeff := l.GetCoeff()
 	bestScore := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, bestCoeff)
+	origInclude := make([]int, len(l.Include))
+	copy(origInclude, bestInclude)
 
 	for i := range l.Include {
 		old := l.Include[i]
 		l.Include[i] = (old + 1) % 2
 
 		if !l.IsEmpty() {
-			copy(bestInclude, l.Include)
 			coeff := l.GetCoeff()
 			score := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
 			if score < bestScore {
+				copy(bestInclude, l.Include)
 				bestScore = score
+				bestCoeff.Reset()
 				bestCoeff.CloneFromVec(coeff)
+			} else {
+				l.Include[i] = old
 			}
+		} else {
+			l.Include[i] = old
 		}
-		l.Include[i] = old
 	}
+
+	// Leave the model unchanged
+	copy(l.Include, origInclude)
 	return OptimizeResult{
 		Score:   bestScore,
 		Coeff:   bestCoeff,
@@ -136,6 +145,14 @@ type OptimizeResult struct {
 	Score   float64
 	Include []int
 	Coeff   *mat.VecDense
+}
+
+// IsEqual returns ture if the two optimize results are equal
+func (or *OptimizeResult) IsEqual(other OptimizeResult) bool {
+	tol := 1e-6
+	return (math.Abs(or.Score-other.Score) < tol) &&
+		AllEqualInt(or.Include, other.Include) &&
+		mat.EqualApprox(or.Coeff, other.Coeff, tol)
 }
 
 // Mutate introduces mutations

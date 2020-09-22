@@ -70,7 +70,10 @@ func Example() {
 
 	// Print the selected features
 	best := ga.HallOfFame[0].Genome.(*gafit.LinearModel)
-	fmt.Printf("%v\n", data.IncludedFeatures(best.Include))
+
+	// Run local optimization on the best genome
+	res := best.Optimize()
+	fmt.Printf("%v\n", data.IncludedFeatures(res.Include))
 
 	// Output:
 	// [const x^3]
