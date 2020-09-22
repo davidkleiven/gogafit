@@ -2,11 +2,11 @@ FOLDER="gafit/_testdata"
 DATAFILE="${FOLDER}/dataset.csv"
 
 echo "Testing fit"
-go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.csv
+go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.json
 
 echo "Test RMSE"
-go run main.go rmse -d $DATAFILE -y Var4 -c coeff.csv
-rm coeff.csv
+go run main.go rmse -d $DATAFILE -y Var4 -m coeff.json
+rm coeff.json
 
 echo "Test ttsplit"
 go run main.go ttsplit -d $DATAFILE -f 0.2

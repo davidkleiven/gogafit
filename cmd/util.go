@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -57,4 +59,35 @@ func ReadCoeffs(fname string) (map[string]float64, error) {
 		coeff[line[0]] = num
 	}
 	return coeff, nil
+}
+
+// ReadModel reads a model from a JSON file
+func ReadModel(fname string) (Model, error) {
+	jsonFile, err := os.Open(fname)
+	if err != nil {
+		return Model{}, nil
+	}
+	defer jsonFile.Close()
+	bytes, err := ioutil.ReadAll(jsonFile)
+
+	if err != nil {
+		return Model{}, err
+	}
+
+	var model Model
+	json.Unmarshal(bytes, &model)
+	return model, nil
+}
+
+// Score is a conveniene type used to collect information about the quality of a model
+type Score struct {
+	Name  string
+	Value float64
+}
+
+// Model is convenience type used to store information about a model
+type Model struct {
+	Datafile string
+	Coeffs   map[string]float64
+	Score    Score
 }

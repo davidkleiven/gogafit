@@ -41,10 +41,19 @@ feat1, feat2, feat3
 the column passed as target is used as the y-vector and the remaining columns are used as the X
 matrix.
 
-The coefficient vector is extracted from a csv file of the form (mycoeff.csv in the example below)
+The coefficient vector is extracted from a csv file of the form (mycoeff.json in the example below)
 
-feat1, -0.5
-feat2, 0.6
+  {
+	"Datafile": "gafit/_testdata/dataset.csv",
+	"Coeffs": {
+	  "Var1": 2.9999990000004804,
+	  "Var2": 1.0000003999997198
+	},
+	"Score": {
+	  "Name": "aicc",
+	  "Value": -25.7622420881808
+	}
+  }
 
 where the first column is a name (that must match one of header fields in the data csvfile) and
 the second column is the value of the coefficients. Coefficients corresponding to columns in the
@@ -86,11 +95,13 @@ gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
 			log.Fatalf("%s\n", err)
 		}
 
-		coeffs, err := ReadCoeffs(coeffFile)
+		model, err := ReadModel(coeffFile)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
 		}
+
+		coeffs := model.Coeffs
 
 		pred := data.Dot(coeffs)
 
@@ -125,5 +136,5 @@ func init() {
 	// is called directly, e.g.:
 	rmseCmd.Flags().StringP("data", "d", "", "Csv file with data")
 	rmseCmd.Flags().StringP("target", "y", "", "Name of target column")
-	rmseCmd.Flags().StringP("coeff", "c", "model.csv", "CSV file with fitted model coefficients")
+	rmseCmd.Flags().StringP("model", "m", "model.json", "JSON file with fitted model coefficients")
 }

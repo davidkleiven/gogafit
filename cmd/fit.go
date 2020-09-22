@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/csv"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -139,10 +141,8 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 			// Optionally print progress information (commented out for this example)
 			if ga.Generations%lograte == 0 {
 				log.Printf("Best %s at generation %d: %f\n", cost, ga.Generations, ga.HallOfFame[0].Fitness)
-				best := ga.HallOfFame[0].Genome.(*gafit.LinearModel)
-				coeff := best.GetCoeff()
-				features := dataset.IncludedFeatures(best.Include)
-				saveCoeff(out, features, coeff)
+				model := model(ga.HallOfFame[0], dataset, cost, dataFile)
+				saveModel(out, model)
 			}
 		}
 
@@ -164,11 +164,8 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 			return
 		}
 
-		// Extract selected features
-		best := ga.HallOfFame[0].Genome.(*gafit.LinearModel)
-		coeff := best.GetCoeff()
-		features := dataset.IncludedFeatures(best.Include)
-		saveCoeff(out, features, coeff)
+		model := model(ga.HallOfFame[0], dataset, cost, dataFile)
+		saveModel(out, model)
 	},
 }
 
@@ -230,4 +227,36 @@ func getCostFunc(name string) gafit.CostFunction {
 		log.Printf("Unknown cost function %s. Using default aicc instead\n", name)
 		return gafit.Aicc
 	}
+}
+
+func join2map(keys []string, values []float64) map[string]float64 {
+	res := make(map[string]float64)
+	for i := range keys {
+		res[keys[i]] = values[i]
+	}
+	return res
+}
+
+func saveModel(fname string, model Model) error {
+	modelSerialized, err := json.MarshalIndent(model, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(fname, modelSerialized, 0644)
+	return err
+}
+
+func model(best eaopt.Individual, dataset gafit.Dataset, cost string, datafile string) Model {
+	bestMod := best.Genome.(*gafit.LinearModel)
+	coeff := bestMod.GetCoeff().RawVector().Data
+	features := dataset.IncludedFeatures(bestMod.Include)
+	model := Model{
+		Datafile: datafile,
+		Score: Score{
+			Name:  cost,
+			Value: best.Fitness,
+		},
+		Coeffs: join2map(features, coeff),
+	}
+	return model
 }
