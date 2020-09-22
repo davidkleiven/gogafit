@@ -100,6 +100,15 @@ gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
 		}
 		rmse := math.Sqrt(rss / float64(pred.Len()))
 		log.Printf("RMSE: %f\n", rmse)
+
+		// Calculate GCV
+		names := []string{}
+		for k := range coeffs {
+			names = append(names, k)
+		}
+		X := data.Submatrix(names)
+		gcv := gafit.GeneralizedCV(rmse, X)
+		log.Printf("Generalized CV (GCV): %f\n", gcv)
 	},
 }
 

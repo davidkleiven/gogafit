@@ -1,6 +1,10 @@
 package gafit
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"fmt"
+
+	"gonum.org/v1/gonum/mat"
+)
 
 // Dataset is a type that represents a linear model
 type Dataset struct {
@@ -42,6 +46,30 @@ func (data Dataset) IncludedFeatures(indicator []int) []string {
 		}
 	}
 	return names
+}
+
+// Submatrix returns a submatrix corresponding to columns given
+func (data Dataset) Submatrix(names []string) *mat.Dense {
+	idxMap := make(map[string]int)
+	for i, n := range data.ColNames {
+		idxMap[n] = i
+	}
+
+	// Check that all names exist
+	for _, n := range names {
+		if _, ok := idxMap[n]; !ok {
+			msg := fmt.Sprintf("Name %s is not a feature in this dataset\n", n)
+			panic(msg)
+		}
+	}
+
+	S := mat.NewDense(data.NumData(), len(names), nil)
+	for i, n := range names {
+		for j := 0; j < data.NumData(); j++ {
+			S.Set(j, i, data.X.At(j, idxMap[n]))
+		}
+	}
+	return S
 }
 
 // Dot perform dot product between X and a sparse coefficient vector

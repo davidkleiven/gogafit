@@ -57,6 +57,16 @@ func Rmse(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 	return math.Sqrt(Rss(X, y, coeff) / n)
 }
 
+// GeneralizedCV returns the generalized CV, given by
+// rmse/(1 - Tr(H)/N), where H is the HatMatrix and
+// N is the number of datapoints
+func GeneralizedCV(rmse float64, X *mat.Dense) float64 {
+	H := HatMatrix(X)
+	tr := mat.Trace(H)
+	N, _ := X.Dims()
+	return rmse / (1.0 - tr/float64(N))
+}
+
 // Pred predicts the outcome of the linear model
 func Pred(X *mat.Dense, coeff *mat.VecDense) *mat.VecDense {
 	r, c := X.Dims()
@@ -140,4 +150,67 @@ func vectorEqual(X *mat.VecDense, Y *mat.VecDense, tol float64) bool {
 		return false
 	}
 	return mat.EqualApprox(X, Y, tol)
+}
+
+// SubMatrix creates a sub-view of a matrix. The view contains the upper
+// left corner starting from element (0, 0) and ending at (Rows, Cols)
+type SubMatrix struct {
+	X    mat.Matrix
+	Rows int
+	Cols int
+}
+
+// Dims returns the dimansion of the matrix
+func (s *SubMatrix) Dims() (int, int) {
+	return s.Rows, s.Cols
+}
+
+// At returns the value of element (i, j)
+func (s *SubMatrix) At(i, j int) float64 {
+	return s.X.At(i, j)
+}
+
+// T returns the transpose of the matrix
+func (s *SubMatrix) T() mat.Matrix {
+	return &SubMatrix{
+		X:    s.X.T(),
+		Rows: s.Cols,
+		Cols: s.Rows,
+	}
+}
+
+// HatMatrix returns the matrix that maps training data onto predictions.
+// y = Hy', where y' are training points. In case of linear regression,
+// y = Xc, where c is a coefficient vector that is given by c = (X^TX)^{-1}X^Ty',
+// the hat matrix H = X(X^TX)^{-1}X^T. Internally, H is calculated by using the QR
+// decomposition of R
+func HatMatrix(X *mat.Dense) *mat.Dense {
+	r, c := X.Dims()
+
+	// If ther number of columns is larger than the number of rows,
+	// H maps y' exactly to y.
+	if c > r {
+		H := mat.NewDense(r, r, nil)
+		for i := 0; i < r; i++ {
+			H.Set(i, i, 1.0)
+		}
+		return H
+	}
+
+	qr := mat.QR{}
+	qr.Factorize(X)
+
+	var Q mat.Dense
+	qr.QTo(&Q)
+
+	n, _ := Q.Dims()
+	Q1 := SubMatrix{
+		X:    &Q,
+		Rows: n,
+		Cols: c,
+	}
+
+	H := mat.NewDense(n, n, nil)
+	H.Mul(&Q1, Q1.T())
+	return H
 }
