@@ -6,7 +6,11 @@ go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.json
 
 echo "Test RMSE"
 go run main.go rmse -d $DATAFILE -y Var4 -m coeff.json
+
+echo "Test plot command"
+go run main.go plot -d $DATAFILE -y Var4 -m coeff.json -o plot.png
 rm coeff.json
+rm plot.png
 
 echo "Test ttsplit"
 go run main.go ttsplit -d $DATAFILE -f 0.2

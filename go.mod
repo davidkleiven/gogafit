@@ -9,4 +9,5 @@ require (
 	github.com/spf13/viper v1.7.1
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
 	gonum.org/v1/gonum v0.8.1
+	gonum.org/v1/plot v0.0.0-20190515093506-e2840ee46a6b
 )
