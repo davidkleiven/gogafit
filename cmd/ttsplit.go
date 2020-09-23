@@ -54,17 +54,21 @@ mydate_test.csv for the test/validation data
 		test := lines[:num]
 		train := lines[num:]
 
-		err = write(outfname(dataFile, "_test"), header, test)
+		testFile := outfname(dataFile, "_test")
+		err = write(testFile, header, test)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
 		}
+		log.Printf("Validation data written to %s\n", testFile)
 
-		err = write(outfname(dataFile, "_train"), header, train)
+		trainFile := outfname(dataFile, "_train")
+		err = write(trainFile, header, train)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
 		}
+		log.Printf("Training data written to %s\n", trainFile)
 	},
 }
 
