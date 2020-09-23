@@ -88,8 +88,8 @@ func Pred(X *mat.Dense, coeff *mat.VecDense) *mat.VecDense {
 	return res
 }
 
-// Fit returns the solution of X*c = y
-func Fit(X *mat.Dense, y *mat.VecDense) *mat.VecDense {
+// FitSVD returns the solution of X*c = y
+func FitSVD(X *mat.Dense, y *mat.VecDense) *mat.VecDense {
 	_, c := X.Dims()
 	var svd mat.SVD
 	svd.Factorize(X, mat.SVDThin)
@@ -109,6 +109,16 @@ func Fit(X *mat.Dense, y *mat.VecDense) *mat.VecDense {
 	}
 	coeff := mat.NewVecDense(c, nil)
 	coeff.MulVec(&v, &uTdoty)
+	return coeff
+}
+
+// Fit solves the least square problem
+func Fit(X *mat.Dense, y *mat.VecDense) *mat.VecDense {
+	_, n := X.Dims()
+	coeff := mat.NewVecDense(n, nil)
+	if err := coeff.SolveVec(X, y); err != nil {
+		return FitSVD(X, y)
+	}
 	return coeff
 }
 
