@@ -152,7 +152,7 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 				Data:         dataset,
 				MutationRate: mutRate,
 				NumSplits:    ns,
-				Cost:         getCostFunc(cost),
+				Cost:         getCostFunc(cost, dataset.NumFeatures()),
 			},
 			Prob: iprob,
 		}
@@ -210,14 +210,14 @@ func init() {
 	fitCmd.Flags().Float64P("mutrate", "m", 0.5, "Mutation rate in genetic algorithm")
 	fitCmd.Flags().StringP("out", "o", "model.csv", "File where the result of the best model is placed")
 	fitCmd.Flags().UintP("numgen", "g", 100, "Number of generations to run")
-	fitCmd.Flags().StringP("cost", "c", "aicc", "Cost function (aic, aicc)")
+	fitCmd.Flags().StringP("cost", "c", "aicc", "Cost function (aic|aicc|bic|ebic)")
 	fitCmd.Flags().UintP("csplits", "s", 2, "Number of splits used for cross over operations")
 	fitCmd.Flags().Float64P("iprob", "i", 0.5, "Probability of activating a feature in the initial pool of genomes")
 	fitCmd.Flags().UintP("lograte", "r", 100, "Number generation between each log and backup of best solution")
 	fitCmd.Flags().UintP("popsize", "p", 30, "Population size")
 }
 
-func getCostFunc(name string) gafit.CostFunction {
+func getCostFunc(name string, numFeat int) gafit.CostFunction {
 	switch name {
 	case "aicc":
 		return gafit.Aicc
@@ -225,6 +225,8 @@ func getCostFunc(name string) gafit.CostFunction {
 		return gafit.Aic
 	case "bic":
 		return gafit.Bic
+	case "ebic":
+		return gafit.NewDefaultEBic(numFeat).Evaluate
 	default:
 		log.Printf("Unknown cost function %s. Using default aicc instead\n", name)
 		return gafit.Aicc
