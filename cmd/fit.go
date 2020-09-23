@@ -223,6 +223,8 @@ func getCostFunc(name string) gafit.CostFunction {
 		return gafit.Aicc
 	case "aic":
 		return gafit.Aic
+	case "bic":
+		return gafit.Bic
 	default:
 		log.Printf("Unknown cost function %s. Using default aicc instead\n", name)
 		return gafit.Aicc

@@ -41,6 +41,14 @@ func Aicc(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 	return Aic(X, y, coeff) + 2*k*(k+1)/denum
 }
 
+// Bic returns the Bayes information criterion
+func Bic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+	logL := LogLikelihood(X, y, coeff)
+	k := float64(coeff.Len())
+	n := float64(y.Len())
+	return k*math.Log(n) - 2.0*logL
+}
+
 // Rss returns the residual sum of square
 func Rss(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 	pred := Pred(X, coeff)
