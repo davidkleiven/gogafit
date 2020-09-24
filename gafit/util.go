@@ -21,12 +21,12 @@ func Aic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 // LogLikelihood returns the logarithm of the likelihood function, assuming normal distributed
 // variable
 func LogLikelihood(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
-	rss := Rss(X, y, coeff)
 	n := float64(y.Len())
-	if rss < 1e-10 {
-		rss = 1e-10
+	rmss := Rss(X, y, coeff) / n
+	if rmss < 1e-10 {
+		rmss = 1e-10
 	}
-	return -0.5 * n * (log2pi + 1.0 + math.Log(rss/n))
+	return -0.5 * n * (log2pi + 1.0 + math.Log(rmss))
 }
 
 // Aicc returns the corrected Afaike's information criteria
