@@ -23,10 +23,13 @@ func Aic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 func LogLikelihood(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 	n := float64(y.Len())
 	rmss := Rss(X, y, coeff) / n
-	if rmss < 1e-10 {
-		rmss = 1e-10
-	}
-	return -0.5 * n * (log2pi + 1.0 + math.Log(rmss))
+
+	// All models with a higher coefficient of determination than this, is
+	// considered equally good. This is added to the rmss to avoid log 0 for
+	// perfect predictions
+	targetRsq := 0.999999
+	tol := math.Sqrt((1.0-targetRsq)*meanSumOfSquares(y)) + 1e-10
+	return -0.5 * n * (log2pi + 1.0 + math.Log(rmss+tol))
 }
 
 // Aicc returns the corrected Afaike's information criteria
@@ -231,4 +234,45 @@ func HatMatrix(X *mat.Dense) *mat.Dense {
 	H := mat.NewDense(n, n, nil)
 	H.Mul(&Q1, Q1.T())
 	return H
+}
+
+func numericRange(x *mat.VecDense) (float64, float64) {
+	if x.Len() == 0 {
+		return 0.0, 0.0
+	}
+
+	minval := x.AtVec(0)
+	maxval := x.AtVec(0)
+
+	for i := 0; i < x.Len(); i++ {
+		if x.AtVec(i) < minval {
+			minval = x.AtVec(i)
+		}
+
+		if x.AtVec(i) > maxval {
+			maxval = x.AtVec(i)
+		}
+	}
+	return minval, maxval
+}
+
+func mean(y *mat.VecDense) float64 {
+	if y.Len() == 0 {
+		return 0.0
+	}
+
+	sum := 0.0
+	for i := 0; i < y.Len(); i++ {
+		sum += y.AtVec(i)
+	}
+	return sum / float64(y.Len())
+}
+
+func meanSumOfSquares(y *mat.VecDense) float64 {
+	yMean := mean(y)
+	sst := 0.0
+	for i := 0; i < y.Len(); i++ {
+		sst += math.Pow(y.AtVec(i)-yMean, 2)
+	}
+	return sst / float64(y.Len())
 }

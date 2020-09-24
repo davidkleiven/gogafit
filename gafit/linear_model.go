@@ -15,6 +15,10 @@ type LinearModelConfig struct {
 	Cost         CostFunction
 	MutationRate float64
 	NumSplits    uint
+
+	// MaxFeatToDataRatio specifies the maximum value of #feat/#data. If not given,
+	// a default value of 0.5 is used
+	MaxFeatToDataRatio float64
 }
 
 // IsEqual if other is equal to lmc, return true. Otherwise, return false.
@@ -23,6 +27,18 @@ func (lmc LinearModelConfig) IsEqual(other LinearModelConfig) bool {
 	return lmc.Data.IsEqual(other.Data) &&
 		(math.Abs(lmc.MutationRate-other.MutationRate) < tol) &&
 		(lmc.NumSplits == other.NumSplits)
+}
+
+func (lmc LinearModelConfig) getMaxFeatToDataRatio() float64 {
+	if lmc.MaxFeatToDataRatio < 1e-10 {
+		return 0.5
+	}
+	return lmc.MaxFeatToDataRatio
+}
+
+// LargestModel returns the largest model consistent with the feature to data ratio
+func (lmc LinearModelConfig) LargestModel() int {
+	return int(lmc.getMaxFeatToDataRatio() * float64(lmc.Data.NumData()))
 }
 
 // LinearModel represent a genome
@@ -101,33 +117,36 @@ func (l *LinearModel) Evaluate() (float64, error) {
 	return l.Optimize().Score, nil
 }
 
+// NumIncluded returns the number of included columns
+func (l *LinearModel) NumIncluded() int {
+	return len(l.IncludedCols())
+}
+
 // Optimize flips all inclusions in. After a call to this
 // function, the included features are affected and set to the best genome
 func (l *LinearModel) Optimize() OptimizeResult {
 	bestInclude := make([]int, len(l.Include))
-	copy(bestInclude, l.Include)
-	bestCoeff := l.GetCoeff()
-	bestScore := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, bestCoeff)
 	origInclude := make([]int, len(l.Include))
-	copy(origInclude, bestInclude)
+	copy(origInclude, l.Include)
 
-	for i := range l.Include {
-		old := l.Include[i]
-		l.Include[i] = (old + 1) % 2
+	bestCoeff := mat.NewVecDense(l.NumIncluded(), nil)
+	bestScore := math.Inf(1)
 
-		if !l.IsEmpty() {
-			coeff := l.GetCoeff()
-			score := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
-			if score < bestScore {
-				copy(bestInclude, l.Include)
-				bestScore = score
-				bestCoeff.Reset()
-				bestCoeff.CloneFromVec(coeff)
-			} else {
-				l.Include[i] = old
-			}
+	iterator := ModelIterator{
+		Include: l.Include,
+		MaxSize: l.Config.LargestModel(),
+	}
+
+	for iterator.Next() != nil {
+		coeff := l.GetCoeff()
+		score := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
+		if score < bestScore {
+			copy(bestInclude, l.Include)
+			bestScore = score
+			bestCoeff.Reset()
+			bestCoeff.CloneFromVec(coeff)
 		} else {
-			l.Include[i] = old
+			iterator.UndoLastFlip()
 		}
 	}
 
