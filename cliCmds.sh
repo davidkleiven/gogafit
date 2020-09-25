@@ -7,6 +7,10 @@ go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.json
 echo "Test RMSE"
 go run main.go rmse -d $DATAFILE -y Var4 -m coeff.json
 
+echo "Test poly command"
+go run main.go poly -d $DATAFILE -y Var4 -o 3 -p Var
+rm "${FOLDER}/dataset_poly.csv"
+
 echo "Test plot command"
 go run main.go plot -d $DATAFILE -y Var4 -m coeff.json -o plot.png
 rm coeff.json

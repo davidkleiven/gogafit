@@ -2,6 +2,8 @@ package gafit
 
 import (
 	"fmt"
+	"math"
+	"strings"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -14,6 +16,29 @@ type Dataset struct {
 	// ColNames gives the name of the "feature" stored in each column of X
 	ColNames   []string
 	TargetName string
+}
+
+// Copy returns a copy of the dataset
+func (data Dataset) Copy() Dataset {
+	var X *mat.Dense
+	var Y *mat.VecDense
+	if data.X != nil {
+		X = mat.DenseCopyOf(data.X)
+	}
+
+	if data.Y != nil {
+		Y = mat.VecDenseCopyOf(data.Y)
+	}
+
+	names := make([]string, len(data.ColNames))
+	copy(names, data.ColNames)
+
+	return Dataset{
+		X:          X,
+		Y:          Y,
+		TargetName: data.TargetName,
+		ColNames:   names,
+	}
 }
 
 // IsEqual returns true if the two dataseta are equal
@@ -84,4 +109,41 @@ func (data Dataset) Dot(coeff map[string]float64) *mat.VecDense {
 	res := mat.NewVecDense(data.NumData(), nil)
 	res.MulVec(data.X, coeffVec)
 	return res
+}
+
+// Columns return the column numbers of all features where <pattern> is part of the name
+func (data Dataset) Columns(pattern string) []int {
+	cols := []int{}
+	for i, c := range data.ColNames {
+		if strings.Contains(c, pattern) {
+			cols = append(cols, i)
+		}
+	}
+	return cols
+}
+
+// AddPoly return a new dataset where polynomial versions of the passed columns are inserted
+func AddPoly(cols []int, data Dataset, order int) Dataset {
+	if order < 2 {
+		return data
+	}
+
+	numExtraCols := (order - 1) * len(cols)
+	dataCpy := data.Copy()
+	rows, origNumCols := dataCpy.X.Dims()
+	Xnew := dataCpy.X.Grow(0, numExtraCols).(*mat.Dense)
+
+	col := origNumCols
+	for _, c := range cols {
+		for power := 2; power < order+1; power++ {
+			for row := 0; row < rows; row++ {
+				Xnew.Set(row, col, math.Pow(Xnew.At(row, c), float64(power)))
+			}
+			name := fmt.Sprintf("%sp%d", data.ColNames[c], power)
+			dataCpy.ColNames = append(dataCpy.ColNames, name)
+			col++
+		}
+	}
+	dataCpy.X = Xnew
+	return dataCpy
 }
