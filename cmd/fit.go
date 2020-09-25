@@ -112,6 +112,12 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 			return
 		}
 
+		fdratio, err := cmd.Flags().GetFloat64("fdratio")
+		if err != nil {
+			log.Fatalf("%s\n", err)
+			return
+		}
+
 		dataset, err := gafit.Read(dataFile, target)
 
 		if err != nil {
@@ -149,10 +155,11 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 		// Initialize the linear model factory
 		factory := gafit.LinearModelFactory{
 			Config: gafit.LinearModelConfig{
-				Data:         dataset,
-				MutationRate: mutRate,
-				NumSplits:    ns,
-				Cost:         getCostFunc(cost, dataset.NumFeatures()),
+				Data:               dataset,
+				MutationRate:       mutRate,
+				NumSplits:          ns,
+				Cost:               getCostFunc(cost, dataset.NumFeatures()),
+				MaxFeatToDataRatio: fdratio,
 			},
 			Prob: iprob,
 		}
@@ -215,6 +222,7 @@ func init() {
 	fitCmd.Flags().Float64P("iprob", "i", 0.5, "Probability of activating a feature in the initial pool of genomes")
 	fitCmd.Flags().UintP("lograte", "r", 100, "Number generation between each log and backup of best solution")
 	fitCmd.Flags().UintP("popsize", "p", 30, "Population size")
+	fitCmd.Flags().Float64P("fdratio", "f", 0.8, "Maximum ratio between number of selected features and number of data points")
 }
 
 func getCostFunc(name string, numFeat int) gafit.CostFunction {
