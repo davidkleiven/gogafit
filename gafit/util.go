@@ -276,3 +276,15 @@ func meanSumOfSquares(y *mat.VecDense) float64 {
 	}
 	return sst / float64(y.Len())
 }
+
+// subMatrix extracts a submatrix from X using only the columns specified
+func subMatrix(X *mat.Dense, cols []int) *mat.Dense {
+	rows, _ := X.Dims()
+	res := mat.NewDense(rows, len(cols), nil)
+	for i, c := range cols {
+		for j := 0; j < rows; j++ {
+			res.Set(j, i, X.At(j, c))
+		}
+	}
+	return res
+}

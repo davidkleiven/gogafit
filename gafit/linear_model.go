@@ -125,38 +125,20 @@ func (l *LinearModel) NumIncluded() int {
 // Optimize flips all inclusions in. After a call to this
 // function, the included features are affected and set to the best genome
 func (l *LinearModel) Optimize() OptimizeResult {
-	bestInclude := make([]int, len(l.Include))
-	origInclude := make([]int, len(l.Include))
-	copy(origInclude, l.Include)
-
-	bestCoeff := mat.NewVecDense(l.NumIncluded(), nil)
-	bestScore := math.Inf(1)
-
-	iterator := ModelIterator{
-		Include: l.Include,
-		MaxSize: l.Config.LargestModel(),
+	mat := l.subMatrix()
+	greedyRes := OrthogonalMatchingPursuit(mat, l.Config.Data.Y, l.Config.Cost, l.Config.LargestModel())
+	res := OptimizeResult{
+		Score:   greedyRes.Score,
+		Coeff:   greedyRes.Coeff,
+		Include: make([]int, len(l.Include)),
 	}
-
-	for iterator.Next() != nil {
-		coeff := l.GetCoeff()
-		score := l.Config.Cost(l.subMatrix(), l.Config.Data.Y, coeff)
-		if score < bestScore {
-			copy(bestInclude, l.Include)
-			bestScore = score
-			bestCoeff.Reset()
-			bestCoeff.CloneFromVec(coeff)
-		} else {
-			iterator.UndoLastFlip()
+	cols := l.IncludedCols()
+	for i, v := range greedyRes.Include {
+		if v == 1 {
+			res.Include[cols[i]] = 1
 		}
 	}
-
-	// Leave the model unchanged
-	copy(l.Include, origInclude)
-	return OptimizeResult{
-		Score:   bestScore,
-		Coeff:   bestCoeff,
-		Include: bestInclude,
-	}
+	return res
 }
 
 // OptimizeResult is returned by local optimization of the linear model
@@ -176,11 +158,18 @@ func (or *OptimizeResult) IsEqual(other OptimizeResult) bool {
 
 // Mutate introduces mutations
 func (l *LinearModel) Mutate(rng *rand.Rand) {
-	for i := range l.Include {
-		if rng.Float64() < l.Config.MutationRate {
-			l.Include[i] = (l.Include[i] + 1) % 2
-		}
+	mutType := rng.Int31n(2)
+
+	switch mutType {
+	case 0:
+		// Flip random bits
+		flipMutation(l.Include, rng, l.Config.MutationRate)
+		break
+	case 1:
+		// Sparsify mutation, remove 50% of the active values
+		sparsifyMutation(l.Include, rng, 0.5)
 	}
+
 	l.flipRandomIfEmpty(rng)
 }
 
@@ -245,4 +234,30 @@ func (lmf *LinearModelFactory) Generate(rng *rand.Rand) eaopt.Genome {
 	}
 	model.flipRandomIfEmpty(rng)
 	return &model
+}
+
+func flipMutation(array []int, rng *rand.Rand, threshold float64) {
+	for i := range array {
+		if rng.Float64() < threshold {
+			array[i] = (array[i] + 1) % 2
+		}
+	}
+}
+
+func sparsifyMutation(array []int, rng *rand.Rand, frac float64) {
+	nonzero := make([]int, len(array))
+	num := 0
+	for i := range array {
+		if array[i] == 1 {
+			nonzero[num] = i
+			num++
+		}
+	}
+
+	nonzero = nonzero[:num]
+	rng.Shuffle(len(nonzero), func(i, j int) { nonzero[i], nonzero[j] = nonzero[j], nonzero[i] })
+	numFlip := int(frac * float64(len(nonzero)))
+	for _, idx := range nonzero[:numFlip] {
+		array[idx] = 0
+	}
 }
