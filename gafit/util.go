@@ -1,6 +1,7 @@
 package gafit
 
 import (
+	"errors"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -287,4 +288,37 @@ func subMatrix(X *mat.Dense, cols []int) *mat.Dense {
 		}
 	}
 	return res
+}
+
+// CovMatrix calculates the covariance matrix between the coefficients
+func CovMatrix(X *mat.Dense, rss float64) (*mat.SymDense, error) {
+	r, c := X.Dims()
+	if c > r {
+		return nil, errors.New("CovMatrix used QR factorization. The system must be underdetermined")
+	}
+
+	var qr mat.QR
+	qr.Factorize(X)
+
+	var R mat.Dense
+	qr.RTo(&R)
+
+	var cholesky mat.Cholesky
+	_, n := R.Dims()
+	Rtri := mat.NewTriDense(n, mat.Upper, R.RawMatrix().Data[:n*n])
+	cholesky.SetFromU(Rtri)
+
+	res := mat.NewSymDense(n, nil)
+	err := cholesky.InverseTo(res)
+	if err != nil {
+		return nil, err
+	}
+
+	scale := 1.0
+	if r > c {
+		scale = 1.0 / float64(r-c)
+	}
+
+	res.ScaleSym(scale*rss, res)
+	return res, nil
 }

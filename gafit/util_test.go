@@ -224,3 +224,31 @@ func TestSubmatrixView(t *testing.T) {
 		t.Errorf("Want\n%v\ngot\n%v\n", want.T(), subT)
 	}
 }
+
+func TestCovarianceMatrix(t *testing.T) {
+	X := mat.NewDense(3, 2, []float64{1.0, 1.0, 1.0, 2.0, 1.0, 3.0})
+	y := mat.NewVecDense(3, []float64{-0.2, -0.8, -5.0})
+	coeff := Fit(X, y)
+	rss := Rss(X, y, coeff)
+	cov, _ := CovMatrix(X, rss)
+
+	// Expected covariance matrix
+	sigma := rss / (3.0 - 2.0)
+	meanX := mat.Sum(X.ColView(1)) / 3.0
+	meanXSq := (1.0 + 4.0 + 9.0) / 3.0
+
+	devSq := 0.0
+	for i := 0; i < 3; i++ {
+		devSq += math.Pow(X.At(i, 1)-meanX, 2.0)
+	}
+
+	varBeta0 := sigma * meanXSq / devSq
+	varBeta1 := sigma * 1.0 / devSq
+	cov01 := -sigma * meanX / devSq
+	expectCov := mat.NewDense(2, 2, []float64{varBeta0, cov01, cov01, varBeta1})
+
+	if !mat.EqualApprox(cov, expectCov, 1e-6) {
+		t.Errorf("Expected\n%v\ngot\n%v\n", mat.Formatted(expectCov), mat.Formatted(cov))
+	}
+
+}
