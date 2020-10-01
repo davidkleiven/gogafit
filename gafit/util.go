@@ -1,12 +1,16 @@
 package gafit
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
+	"strconv"
 
 	"github.com/MaxHalford/eaopt"
 	"gonum.org/v1/gonum/mat"
@@ -412,4 +416,106 @@ func (gab *GABackupCB) Build() func(ga *eaopt.GA) {
 			SaveModel(gab.BackupFile, model)
 		}
 	}
+}
+
+// Prediction is a type that represent a prediction (the expected valud and the standard deviation)
+type Prediction struct {
+	Value float64
+	Std   float64
+}
+
+// IsEqual returns true of the two predictions are equal
+func (p Prediction) IsEqual(other Prediction) bool {
+	tol := 1e-8
+	return (math.Abs(p.Value-other.Value)) < tol && (math.Abs(p.Std-other.Std) < tol)
+}
+
+// SavePredictions stores the predictions in a file
+func SavePredictions(fname string, pred []Prediction) error {
+	ofile, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	defer ofile.Close()
+
+	writer := csv.NewWriter(ofile)
+	defer writer.Flush()
+	err = writer.Write([]string{"prediction, stddev"})
+	if err != nil {
+		return err
+	}
+	for _, p := range pred {
+		record := []string{fmt.Sprintf("%f", p.Value), fmt.Sprintf("%f", p.Std)}
+		err = writer.Write(record)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReadPredictions reads the predictions from a csv file (same as stored by SavePredictions)
+func ReadPredictions(fname string) ([]Prediction, error) {
+	infile, err := os.Open(fname)
+	if err != nil {
+		return nil, err
+	}
+	defer infile.Close()
+
+	reader := csv.NewReader(infile)
+	pred := []Prediction{}
+	lineNo := 0
+	for {
+		line, err := reader.Read()
+		lineNo++
+
+		// First line a header
+		if lineNo == 1 {
+			continue
+		}
+		if err == io.EOF {
+			return pred, nil
+		}
+		value, err := strconv.ParseFloat(line[0], 64)
+		if err != nil {
+			return pred, err
+		}
+		std, err := strconv.ParseFloat(line[1], 64)
+		if err != nil {
+			return pred, err
+		}
+
+		pred = append(pred, Prediction{Value: value, Std: std})
+	}
+
+}
+
+// GetPredictions together with the standard deviations for all data in X
+func GetPredictions(data Dataset, model Model) []Prediction {
+	names := []string{}
+	coeffs := mat.NewVecDense(len(model.Coeffs), nil)
+	counter := 0
+	for k, v := range model.Coeffs {
+		names = append(names, k)
+		coeffs.SetVec(counter, v)
+		counter++
+	}
+
+	sub := data.Submatrix(names)
+	hat := HatMatrix(sub)
+	rss := Rss(sub, data.Y, coeffs)
+	pred := Pred(sub, coeffs)
+	numData, numFeat := sub.Dims()
+	denum := numData - numFeat
+	if denum <= 0 {
+		denum = 1
+	}
+	correctedRss := rss / float64(denum)
+
+	predictions := make([]Prediction, pred.Len())
+	for i := 0; i < pred.Len(); i++ {
+		predictions[i].Value = pred.AtVec(i)
+		predictions[i].Std = math.Sqrt(correctedRss * (1.0 + hat.At(i, i)))
+	}
+	return predictions
 }
