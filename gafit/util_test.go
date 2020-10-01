@@ -3,6 +3,7 @@ package gafit
 import (
 	"math"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 
@@ -264,4 +265,73 @@ func TestJoin2Map(t *testing.T) {
 	if !reflect.DeepEqual(res, want) {
 		t.Errorf("Expected\n%v\ngot\n%v\n", want, res)
 	}
+}
+
+func TestGetPredictions(t *testing.T) {
+	dataset := Dataset{
+		X:          mat.NewDense(3, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}),
+		Y:          mat.NewVecDense(3, []float64{1.0, 2.0, 3.0}),
+		ColNames:   []string{"feat1", "feat2", "feat3"},
+		TargetName: "mytarget",
+	}
+
+	model := Model{
+		Coeffs: make(map[string]float64),
+	}
+	model.Coeffs["feat3"] = -2.0
+	model.Coeffs["feat1"] = 1.0
+
+	coeffs := mat.NewVecDense(3, []float64{1.0, 0.0, -2.0})
+	pred := Pred(dataset.X, coeffs)
+	predictions := GetPredictions(dataset, model)
+
+	// Check that all agree
+	tol := 1e-8
+	for i := 0; i < 3; i++ {
+		if math.Abs(predictions[i].Value-pred.AtVec(i)) > tol {
+			t.Errorf("Expected %f got %f\n", pred.AtVec(i), predictions[i].Value)
+		}
+	}
+}
+
+func TestSaveReadRoundTrip(t *testing.T) {
+	predOrig := []Prediction{
+		{
+			Value: 1.0,
+			Std:   2.0,
+		},
+		{
+			Value: -2.0,
+			Std:   0.01,
+		},
+		{
+			Value: 3.0,
+			Std:   0.05,
+		},
+	}
+
+	outfile := "predDemo.csv"
+	defer os.Remove(outfile)
+	err := SavePredictions(outfile, predOrig)
+	if err != nil {
+		t.Errorf("Error during save: %s\n", err)
+		return
+	}
+
+	predRead, err := ReadPredictions(outfile)
+	if err != nil {
+		t.Errorf("Error during read: %s\n", err)
+		return
+	}
+
+	if len(predRead) != len(predOrig) {
+		t.Errorf("Lentgh differ. Expected %d got %d\n", len(predOrig), len(predRead))
+		return
+	}
+	for i := 0; i < len(predOrig); i++ {
+		if !predOrig[i].IsEqual(predRead[i]) {
+			t.Errorf("Expected\n%+v\ngot\n%+v\n", predOrig[i], predRead[i])
+		}
+	}
+
 }
