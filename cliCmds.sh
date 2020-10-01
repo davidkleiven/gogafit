@@ -4,6 +4,10 @@ DATAFILE="${FOLDER}/dataset.csv"
 echo "Testing fit"
 go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.json
 
+echo "Testing pred command"
+go run main.go pred -d $DATAFILE -m coeff.json
+rm "${FOLDER}/dataset_predictions.csv"
+
 echo "Test RMSE"
 go run main.go rmse -d $DATAFILE -y Var4 -m coeff.json
 

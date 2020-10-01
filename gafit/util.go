@@ -490,11 +490,13 @@ func ReadPredictions(fname string) ([]Prediction, error) {
 
 }
 
-// GetPredictions together with the standard deviations for all data in X
-func GetPredictions(data Dataset, model Model) []Prediction {
+// GetPredictions together with the standard deviations for all data in predData. If predData
+// is nil, data will be used (e.g. in sample prediction errors)
+func GetPredictions(data Dataset, model Model, predData *Dataset) []Prediction {
 	names := []string{}
 	coeffs := mat.NewVecDense(len(model.Coeffs), nil)
 	counter := 0
+
 	for k, v := range model.Coeffs {
 		names = append(names, k)
 		coeffs.SetVec(counter, v)
@@ -502,7 +504,11 @@ func GetPredictions(data Dataset, model Model) []Prediction {
 	}
 
 	sub := data.Submatrix(names)
-	hat := HatMatrix(sub)
+
+	if predData == nil {
+		predData = &data
+	}
+
 	rss := Rss(sub, data.Y, coeffs)
 	pred := Pred(sub, coeffs)
 	numData, numFeat := sub.Dims()
@@ -511,11 +517,20 @@ func GetPredictions(data Dataset, model Model) []Prediction {
 		denum = 1
 	}
 	correctedRss := rss / float64(denum)
+	cov, err := CovMatrix(sub, rss)
+	if err != nil {
+		panic(err)
+	}
+
+	subPred := predData.Submatrix(names)
+	r, _ := subPred.Dims()
+	variance := mat.NewDense(r, r, nil)
+	variance.Product(subPred, cov, subPred.T())
 
 	predictions := make([]Prediction, pred.Len())
 	for i := 0; i < pred.Len(); i++ {
 		predictions[i].Value = pred.AtVec(i)
-		predictions[i].Std = math.Sqrt(correctedRss * (1.0 + hat.At(i, i)))
+		predictions[i].Std = math.Sqrt(correctedRss + variance.At(i, i))
 	}
 	return predictions
 }
