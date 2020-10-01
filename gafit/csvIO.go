@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -22,14 +23,16 @@ func Read(fname string, targetName string) (Dataset, error) {
 	return ReadFile(f, targetName)
 }
 
-// ReadFile creates a dataset from the passed file
+// ReadFile creates a dataset from the passed file, If targetName is an empty
+// string, the entire file will be added to the X matrix. If targetName is not empty string
+// and is not found in the header, the function will return with an error
 func ReadFile(csvfile *os.File, targetName string) (Dataset, error) {
 	targetName = strings.TrimSpace(targetName)
 	r := csv.NewReader(csvfile)
 	data := Dataset{}
 
 	isHeader := true
-	targetCol := 0
+	targetCol := -1
 	X := []float64{}
 	y := []float64{}
 	for {
@@ -43,7 +46,7 @@ func ReadFile(csvfile *os.File, targetName string) (Dataset, error) {
 			parseHeader(record)
 			record, targetCol = remove(record, targetName)
 
-			if targetCol == -1 {
+			if targetCol == -1 && targetName != "" {
 				return data, errors.New("Target column not found in the header")
 			}
 			data.ColNames = record
@@ -53,6 +56,7 @@ func ReadFile(csvfile *os.File, targetName string) (Dataset, error) {
 			if err != nil {
 				return data, err
 			}
+
 			values, targ := removeIndex(values, targetCol)
 			y = append(y, targ)
 			for _, v := range values {
@@ -115,6 +119,9 @@ func remove(record []string, toRemove string) ([]string, int) {
 // Remove item at position idx, and return the value of the removed item
 // Order is preserved
 func removeIndex(x []float64, idx int) ([]float64, float64) {
+	if idx < 0 || idx >= len(x) {
+		return x, math.NaN()
+	}
 	value := x[idx]
 	copy(x[idx:], x[idx+1:])
 	x = x[:len(x)-1]

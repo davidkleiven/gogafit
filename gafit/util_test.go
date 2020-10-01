@@ -283,7 +283,7 @@ func TestGetPredictions(t *testing.T) {
 
 	coeffs := mat.NewVecDense(3, []float64{1.0, 0.0, -2.0})
 	pred := Pred(dataset.X, coeffs)
-	predictions := GetPredictions(dataset, model)
+	predictions := GetPredictions(dataset, model, nil)
 
 	// Check that all agree
 	tol := 1e-8
