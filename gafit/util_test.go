@@ -3,6 +3,7 @@ package gafit
 import (
 	"math"
 	"math/rand"
+	"reflect"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -250,5 +251,17 @@ func TestCovarianceMatrix(t *testing.T) {
 	if !mat.EqualApprox(cov, expectCov, 1e-6) {
 		t.Errorf("Expected\n%v\ngot\n%v\n", mat.Formatted(expectCov), mat.Formatted(cov))
 	}
+}
 
+func TestJoin2Map(t *testing.T) {
+	keys := []string{"abc", "def"}
+	values := []float64{1.0, 2.0}
+	res := join2map(keys, values)
+	want := make(map[string]float64)
+	want["abc"] = 1.0
+	want["def"] = 2.0
+
+	if !reflect.DeepEqual(res, want) {
+		t.Errorf("Expected\n%v\ngot\n%v\n", want, res)
+	}
 }

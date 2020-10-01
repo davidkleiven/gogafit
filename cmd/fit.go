@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"encoding/csv"
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -142,15 +140,16 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 		// Set the number of generations to run for
 		ga.NGenerations = ng
 
-		// Add a custom print function to track progress
-		ga.Callback = func(ga *eaopt.GA) {
-			// Optionally print progress information (commented out for this example)
-			if ga.Generations%lograte == 0 {
-				log.Printf("Best %s at generation %d: %f\n", cost, ga.Generations, ga.HallOfFame[0].Fitness)
-				model := model(ga.HallOfFame[0], dataset, cost, dataFile)
-				saveModel(out, model)
-			}
+		callback := gafit.GABackupCB{
+			Cost:       cost,
+			Dataset:    dataset,
+			Datafile:   dataFile,
+			Rate:       lograte,
+			BackupFile: out,
 		}
+
+		// Add a custom print function to track progress
+		ga.Callback = callback.Build()
 
 		// Initialize the linear model factory
 		factory := gafit.LinearModelFactory{
@@ -171,8 +170,8 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 			return
 		}
 
-		model := model(ga.HallOfFame[0], dataset, cost, dataFile)
-		saveModel(out, model)
+		model := gafit.NewModel(ga.HallOfFame[0], dataset, cost, dataFile)
+		gafit.SaveModel(out, model)
 	},
 }
 
@@ -239,37 +238,4 @@ func getCostFunc(name string, numFeat int) gafit.CostFunction {
 		log.Printf("Unknown cost function %s. Using default aicc instead\n", name)
 		return gafit.Aicc
 	}
-}
-
-func join2map(keys []string, values []float64) map[string]float64 {
-	res := make(map[string]float64)
-	for i := range keys {
-		res[keys[i]] = values[i]
-	}
-	return res
-}
-
-func saveModel(fname string, model Model) error {
-	modelSerialized, err := json.MarshalIndent(model, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(fname, modelSerialized, 0644)
-	return err
-}
-
-func model(best eaopt.Individual, dataset gafit.Dataset, cost string, datafile string) Model {
-	bestMod := best.Genome.(*gafit.LinearModel)
-	res := bestMod.Optimize()
-	coeff := res.Coeff.RawVector().Data
-	features := dataset.IncludedFeatures(res.Include)
-	model := Model{
-		Datafile: datafile,
-		Score: Score{
-			Name:  cost,
-			Value: res.Score,
-		},
-		Coeffs: join2map(features, coeff),
-	}
-	return model
 }
