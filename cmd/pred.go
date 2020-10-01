@@ -43,7 +43,7 @@ are the in-sample predictions and prediction errors.
 			return
 		}
 
-		data, err := gafit.Read(model.Datafile, "")
+		data, err := gafit.Read(model.Datafile, model.TargetName)
 
 		predDataFile, err := cmd.Flags().GetString("data")
 		if err != nil {

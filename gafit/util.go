@@ -358,9 +358,10 @@ type Score struct {
 
 // Model is convenience type used to store information about a model
 type Model struct {
-	Datafile string
-	Coeffs   map[string]float64
-	Score    Score
+	Datafile   string
+	TargetName string
+	Coeffs     map[string]float64
+	Score      Score
 }
 
 // NewModel creates a new fitted model from the best individual of a GA run
@@ -370,7 +371,8 @@ func NewModel(best eaopt.Individual, dataset Dataset, cost string, datafile stri
 	coeff := res.Coeff.RawVector().Data
 	features := dataset.IncludedFeatures(res.Include)
 	model := Model{
-		Datafile: datafile,
+		Datafile:   datafile,
+		TargetName: dataset.TargetName,
 		Score: Score{
 			Name:  cost,
 			Value: res.Score,
