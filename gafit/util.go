@@ -398,7 +398,7 @@ func SaveModel(fname string, model Model) error {
 type GABackupCB struct {
 	Cost       string
 	Dataset    Dataset
-	Datafile   string
+	DataFile   string
 	Rate       uint
 	BackupFile string
 }
@@ -408,7 +408,7 @@ func (gab *GABackupCB) Build() func(ga *eaopt.GA) {
 	return func(ga *eaopt.GA) {
 		if ga.Generations%gab.Rate == 0 {
 			log.Printf("Best %s at generation %d: %f\n", gab.Cost, ga.Generations, ga.HallOfFame[0].Fitness)
-			model := NewModel(ga.HallOfFame[0], gab.Dataset, gab.Cost, gab.Datafile)
+			model := NewModel(ga.HallOfFame[0], gab.Dataset, gab.Cost, gab.DataFile)
 			SaveModel(gab.BackupFile, model)
 		}
 	}

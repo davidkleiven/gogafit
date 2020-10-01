@@ -143,7 +143,7 @@ will take the columns corresponding to feat1 and feat2 as the X matrix, and use 
 		callback := gafit.GABackupCB{
 			Cost:       cost,
 			Dataset:    dataset,
-			Datafile:   dataFile,
+			DataFile:   dataFile,
 			Rate:       lograte,
 			BackupFile: out,
 		}
