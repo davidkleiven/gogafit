@@ -335,3 +335,20 @@ func TestSaveReadRoundTrip(t *testing.T) {
 	}
 
 }
+
+func TestCovarianceConsistency(t *testing.T) {
+	X := mat.NewDense(4, 3, []float64{1.0, 2.0, -3.0, 4.0, 5.0, 6.7, 7.0, 8.0, 9.0, 10.0, -11.0, 12.0})
+	hat := HatMatrix(X)
+	cov, err := CovMatrix(X, 1.0)
+	if err != nil {
+		t.Errorf("Error occured in CovMatrix: %s\n", err)
+		return
+	}
+
+	// Hat matrix should be X*cov*X.T
+	hatFromCov := mat.NewDense(4, 4, nil)
+	hatFromCov.Product(X, cov, X.T())
+	if !mat.EqualApprox(hatFromCov, hat, 1e-8) {
+		t.Errorf("Expected\n%v\ngot\n%v\n", mat.Formatted(hat), mat.Formatted(hatFromCov))
+	}
+}
