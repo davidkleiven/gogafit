@@ -95,7 +95,7 @@ gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
 			log.Fatalf("%s\n", err)
 		}
 
-		model, err := ReadModel(coeffFile)
+		model, err := gafit.ReadModel(coeffFile)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return

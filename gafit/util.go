@@ -1,9 +1,14 @@
 package gafit
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"log"
 	"math"
+	"os"
 
+	"github.com/MaxHalford/eaopt"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -321,4 +326,90 @@ func CovMatrix(X *mat.Dense, rss float64) (*mat.SymDense, error) {
 
 	res.ScaleSym(scale*rss, res)
 	return res, nil
+}
+
+// ReadModel reads a model from a JSON file
+func ReadModel(fname string) (Model, error) {
+	jsonFile, err := os.Open(fname)
+	if err != nil {
+		return Model{}, nil
+	}
+	defer jsonFile.Close()
+	bytes, err := ioutil.ReadAll(jsonFile)
+
+	if err != nil {
+		return Model{}, err
+	}
+
+	var model Model
+	json.Unmarshal(bytes, &model)
+	return model, nil
+}
+
+// Score is a conveniene type used to collect information about the quality of a model
+type Score struct {
+	Name  string
+	Value float64
+}
+
+// Model is convenience type used to store information about a model
+type Model struct {
+	Datafile string
+	Coeffs   map[string]float64
+	Score    Score
+}
+
+// NewModel creates a new fitted model from the best individual of a GA run
+func NewModel(best eaopt.Individual, dataset Dataset, cost string, datafile string) Model {
+	bestMod := best.Genome.(*LinearModel)
+	res := bestMod.Optimize()
+	coeff := res.Coeff.RawVector().Data
+	features := dataset.IncludedFeatures(res.Include)
+	model := Model{
+		Datafile: datafile,
+		Score: Score{
+			Name:  cost,
+			Value: res.Score,
+		},
+		Coeffs: join2map(features, coeff),
+	}
+	return model
+}
+
+func join2map(keys []string, values []float64) map[string]float64 {
+	res := make(map[string]float64)
+	for i := range keys {
+		res[keys[i]] = values[i]
+	}
+	return res
+}
+
+// SaveModel writes a JSON version of the model to file
+func SaveModel(fname string, model Model) error {
+	modelSerialized, err := json.MarshalIndent(model, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(fname, modelSerialized, 0644)
+	return err
+}
+
+// GABackupCB is a default type used to construct a default backup function
+type GABackupCB struct {
+	Cost       string
+	Dataset    Dataset
+	Datafile   string
+	Rate       uint
+	BackupFile string
+}
+
+// Build constructs the callback function
+func (gab *GABackupCB) Build() func(ga *eaopt.GA) {
+	return func(ga *eaopt.GA) {
+		if ga.Generations%gab.Rate == 0 {
+			log.Printf("Best %s at generation %d: %f\n", gab.Cost, ga.Generations, ga.HallOfFame[0].Fitness)
+			model := NewModel(ga.HallOfFame[0], gab.Dataset, gab.Cost, gab.Datafile)
+			SaveModel(gab.BackupFile, model)
+		}
+	}
 }

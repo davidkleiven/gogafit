@@ -56,7 +56,7 @@ where target is the name of the target values in the datafiles.
 			return
 		}
 
-		model, err := ReadModel(modelFile)
+		model, err := gafit.ReadModel(modelFile)
 		if err != nil {
 			log.Fatalf("Reading model: %s\n", err)
 			return
