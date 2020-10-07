@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/MaxHalford/eaopt"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -351,4 +352,21 @@ func TestCovarianceConsistency(t *testing.T) {
 	if !mat.EqualApprox(hatFromCov, hat, 1e-8) {
 		t.Errorf("Expected\n%v\ngot\n%v\n", mat.Formatted(hat), mat.Formatted(hatFromCov))
 	}
+}
+
+func TestGADefaultLogger(t *testing.T) {
+	ga, err := eaopt.NewDefaultGAConfig().NewGA()
+	if err != nil {
+		t.Errorf("Could not initialize ga: %s\n", err)
+	}
+	ga.Callback = GAProgressLogger
+	factory := LinearModelFactory{
+		Config: LinearModelConfig{
+			Data: Dataset{
+				X: mat.NewDense(10, 10, nil),
+				Y: mat.NewVecDense(10, nil),
+			},
+		},
+	}
+	ga.Minimize(factory.Generate)
 }

@@ -420,6 +420,12 @@ func (gab *GABackupCB) Build() func(ga *eaopt.GA) {
 	}
 }
 
+// GAProgressLogger can be used as a callback to the GA algorithm. It logs the progress of
+// the method
+func GAProgressLogger(ga *eaopt.GA) {
+	log.Printf("Best fitness at generation %d: %f\n", ga.Generations, ga.HallOfFame[0].Fitness)
+}
+
 // Prediction is a type that represent a prediction (the expected valud and the standard deviation)
 type Prediction struct {
 	Value float64
