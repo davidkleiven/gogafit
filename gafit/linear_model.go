@@ -1,6 +1,7 @@
 package gafit
 
 import (
+	"log"
 	"math"
 	"math/rand"
 
@@ -19,6 +20,15 @@ type LinearModelConfig struct {
 	// MaxFeatToDataRatio specifies the maximum value of #feat/#data. If not given,
 	// a default value of 0.5 is used
 	MaxFeatToDataRatio float64
+}
+
+// GetCostFunction returns the cost function. If not given, AICC is used as default
+func (lmc LinearModelConfig) GetCostFunction() CostFunction {
+	if lmc.Cost == nil {
+		log.Printf("No cost function set. Using AICC as default.\n")
+		lmc.Cost = Aicc
+	}
+	return lmc.Cost
 }
 
 // IsEqual if other is equal to lmc, return true. Otherwise, return false.
@@ -126,7 +136,7 @@ func (l *LinearModel) NumIncluded() int {
 // function, the included features are affected and set to the best genome
 func (l *LinearModel) Optimize() OptimizeResult {
 	mat := l.subMatrix()
-	greedyRes := OrthogonalMatchingPursuit(mat, l.Config.Data.Y, l.Config.Cost, l.Config.LargestModel())
+	greedyRes := OrthogonalMatchingPursuit(mat, l.Config.Data.Y, l.Config.GetCostFunction(), l.Config.LargestModel())
 	res := OptimizeResult{
 		Score:   greedyRes.Score,
 		Coeff:   greedyRes.Coeff,
