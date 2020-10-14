@@ -79,9 +79,10 @@ type FittedModel struct {
 	X     []float64
 	Y     []float64
 	Coeff []float64
+	Names []string
 }
 
-func model2json(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) string {
+func model2json(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) string {
 	r, c := X.Dims()
 	model := FittedModel{
 		Rows:  r,
@@ -89,6 +90,7 @@ func model2json(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) string {
 		X:     X.RawMatrix().Data,
 		Y:     y.RawVector().Data,
 		Coeff: coeff.RawVector().Data,
+		Names: names,
 	}
 	b, err := json.Marshal(&model)
 	if err != nil {
@@ -98,8 +100,8 @@ func model2json(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) string {
 }
 
 // Execute runs
-func (cfh CostFunctionHook) Execute(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
-	strRep := model2json(X, y, coeff)
+func (cfh CostFunctionHook) Execute(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
+	strRep := model2json(X, y, coeff, names)
 
 	cmd := exec.Command(cfh.Hook.Script, strRep)
 	out, err := cmd.Output()

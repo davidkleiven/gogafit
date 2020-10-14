@@ -12,10 +12,11 @@ func completeModel() LinearModel {
 	return LinearModel{
 		Config: LinearModelConfig{
 			Data: Dataset{
-				X: mat.NewDense(2, 2, []float64{1.0, 2.0, 1.0, -1.0}),
-				Y: mat.NewVecDense(2, []float64{4.0, -3.0}),
+				X:        mat.NewDense(2, 2, []float64{1.0, 2.0, 1.0, -1.0}),
+				Y:        mat.NewVecDense(2, []float64{4.0, -3.0}),
+				ColNames: []string{"feat1", "feat2"},
 			},
-			Cost: func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+			Cost: func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 				return 0.0
 			},
 			MutationRate: 0.3,
@@ -50,13 +51,14 @@ func TestSubMatrix(t *testing.T) {
 			Data: Dataset{
 				X: mat.NewDense(2, 7, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
 					8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}),
+				ColNames: []string{"feat1", "feat2", "feat3", "feat4", "f5", "f6", "f7"},
 			},
 		},
 		Include: []int{0, 0, 1, 0, 1, 0, 1},
 	}
 
 	want := mat.NewDense(2, 3, []float64{3.0, 5.0, 7.0, 10.0, 12.0, 14.0})
-	got := model.subMatrix()
+	got := model.subDataset().X
 
 	tol := 1e-6
 	if !mat.EqualApprox(want, got, tol) {

@@ -52,7 +52,13 @@ func TestGreadyOptimize(t *testing.T) {
 		y.SetVec(i, -2.0+4.0*x*x-0.5*x*x*x*x)
 	}
 
-	res := OrthogonalMatchingPursuit(X, y, Aicc, 8)
+	data := Dataset{
+		X:        X,
+		Y:        y,
+		ColNames: make([]string, cols),
+	}
+
+	res := OrthogonalMatchingPursuit(data, Aicc, 8)
 
 	// This model should be able to predict the result perfectly
 	selected := []int{}

@@ -19,10 +19,10 @@ import (
 const log2pi = 1.83787706641
 
 // CostFunction is a type used to represent cost functions for fitting
-type CostFunction func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64
+type CostFunction func(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64
 
 // Aic returns Afaike's information criteria
-func Aic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+func Aic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 	k := float64(coeff.Len())
 	logL := LogLikelihood(X, y, coeff)
 	return 2.0*k - 2.0*logL
@@ -43,7 +43,7 @@ func LogLikelihood(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 }
 
 // Aicc returns the corrected Afaike's information criteria
-func Aicc(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+func Aicc(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 	k := float64(coeff.Len())
 	n := float64(y.Len())
 
@@ -51,11 +51,11 @@ func Aicc(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
 	if denum < 1 {
 		denum = 1
 	}
-	return Aic(X, y, coeff) + 2*k*(k+1)/denum
+	return Aic(X, y, coeff, names) + 2*k*(k+1)/denum
 }
 
 // Bic returns the Bayes information criterion
-func Bic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+func Bic(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 	logL := LogLikelihood(X, y, coeff)
 	k := float64(coeff.Len())
 	n := float64(y.Len())

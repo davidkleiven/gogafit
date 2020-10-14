@@ -32,6 +32,7 @@ def main(arg):
 	#     "X": <Design matrix>
 	#     "Y": <Target value>
 	#     "Coeff": <Fitted coefficients>
+	#     "Names": <List with the name of each feature>
 	# }
 	# Predictions for Y can be obtained via y_pred = X.dot(Coeff)
 

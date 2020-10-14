@@ -21,9 +21,9 @@ type EBic struct {
 }
 
 // Evaluate evaluates the EBic criterion
-func (e EBic) Evaluate(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense) float64 {
+func (e EBic) Evaluate(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 	numFeat := float64(coeff.Len())
-	return Bic(X, y, coeff) + 2.0*e.Gamma*combin.LogGeneralizedBinomial(float64(e.MaxNumFeatures), numFeat)
+	return Bic(X, y, coeff, names) + 2.0*e.Gamma*combin.LogGeneralizedBinomial(float64(e.MaxNumFeatures), numFeat)
 }
 
 // NewDefaultEBic returns a new Ebic function

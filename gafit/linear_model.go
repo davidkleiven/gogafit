@@ -23,7 +23,7 @@ type LinearModelConfig struct {
 }
 
 // GetCostFunction returns the cost function. If not given, AICC is used as default
-func (lmc LinearModelConfig) GetCostFunction() CostFunction {
+func (lmc *LinearModelConfig) GetCostFunction() CostFunction {
 	if lmc.Cost == nil {
 		log.Printf("No cost function set. Using AICC as default.\n")
 		lmc.Cost = Aicc
@@ -83,17 +83,27 @@ func (l *LinearModel) MutationRate() float64 {
 	}
 	return l.Config.MutationRate
 }
-func (l *LinearModel) subMatrix() *mat.Dense {
+func (l *LinearModel) subDataset() Dataset {
 	rows, _ := l.Config.Data.X.Dims()
 	cols := l.IncludedCols()
 
-	subMat := mat.NewDense(rows, len(cols), nil)
+	data := Dataset{
+		X:          mat.NewDense(rows, len(cols), nil),
+		Y:          l.Config.Data.Y,
+		ColNames:   make([]string, len(cols)),
+		TargetName: l.Config.Data.TargetName,
+	}
+
 	for i := 0; i < rows; i++ {
 		for j := range cols {
-			subMat.Set(i, j, l.Config.Data.X.At(i, cols[j]))
+			data.X.Set(i, j, l.Config.Data.X.At(i, cols[j]))
 		}
 	}
-	return subMat
+
+	for count, col := range cols {
+		data.ColNames[count] = l.Config.Data.ColNames[col]
+	}
+	return data
 }
 
 // IsEmpty returns true if the model contains no features
@@ -115,7 +125,7 @@ func (l *LinearModel) flipRandomIfEmpty(rng *rand.Rand) {
 
 // GetCoeff return the coefficients corresponding to the current selection
 func (l *LinearModel) GetCoeff() *mat.VecDense {
-	subMat := l.subMatrix()
+	subMat := l.subDataset().X
 	return Fit(subMat, l.Config.Data.Y)
 }
 
@@ -135,8 +145,8 @@ func (l *LinearModel) NumIncluded() int {
 // Optimize flips all inclusions in. After a call to this
 // function, the included features are affected and set to the best genome
 func (l *LinearModel) Optimize() OptimizeResult {
-	mat := l.subMatrix()
-	greedyRes := OrthogonalMatchingPursuit(mat, l.Config.Data.Y, l.Config.GetCostFunction(), l.Config.LargestModel())
+	data := l.subDataset()
+	greedyRes := OrthogonalMatchingPursuit(data, l.Config.GetCostFunction(), l.Config.LargestModel())
 	res := OptimizeResult{
 		Score:   greedyRes.Score,
 		Coeff:   greedyRes.Coeff,
