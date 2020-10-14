@@ -16,8 +16,10 @@ Available Commands:
   elm         Create an extreme learning machine network
   fit         Fit data
   help        Help about any command
+  hook        Generate templates scripts for hooks
   plot        Plot the fit in a scatter plot
   poly        Add polynomial versions of a subset of the columns
+  pred        Command for predicting from a GA model
   rmse        Calculate RMSE for a model
   ttsplit     Split a dataset in a train and test set
 
@@ -63,7 +65,7 @@ Flags:
   -r, --lograte uint    Number generation between each log and backup of best solution (default 100)
   -m, --mutrate float   Mutation rate in genetic algorithm (default 0.5)
   -g, --numgen uint     Number of generations to run (default 100)
-  -o, --out string      File where the result of the best model is placed (default "model.csv")
+  -o, --out string      File where the result of the best model is placed (default "model.json")
   -p, --popsize uint    Population size (default 30)
   -y, --target string   Name of the column used as target in the fit (default "lastCol")
   -t, --type string     Fit-type: regression (reg) or classify (cls) (default "reg")
@@ -71,7 +73,7 @@ Flags:
 Global Flags:
       --config string   config file (default is $HOME/.gogafit.yaml)
 ```
-##TTsplit command
+## TTsplit command
 ```
 Splits the passed csv file into a training set and a validation set.
 If the data file is called mydata.csv, the program will create two file
@@ -90,7 +92,7 @@ Flags:
 Global Flags:
       --config string   config file (default is $HOME/.gogafit.yaml)
 ```
-##RMSE command
+## RMSE command
 ```
 Calcualte the root mean square error for a given model.
 
@@ -226,4 +228,19 @@ Flags:
 Global Flags:
       --config string   config file (default is $HOME/.gogafit.yaml)
 ```
+## Hook command
+```
+This command generates templates for hooks
 
+Usage:
+  gogafit hook [flags]
+
+Flags:
+  -h, --help            help for hook
+  -o, --out string      output file (default "cost.py")
+  -p, --pyexec string   name of the python executable (default "python")
+  -t, --type string     Template type (currently only cost supported) (default "cost")
+
+Global Flags:
+      --config string   config file (default is $HOME/.gogafit.yaml)
+```

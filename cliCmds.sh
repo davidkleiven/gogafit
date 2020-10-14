@@ -28,3 +28,8 @@ rm "${FOLDER}/dataset_test.csv"
 echo "Testing ELM command"
 go run main.go elm -d $DATAFILE -y Var4 -r 20 -s 10
 rm "${FOLDER}/dataset_elm.csv"
+
+echo "Test template script"
+go run main.go hook -t cost -p python -o myhook.py
+go run main.go fit -d $DATAFILE -y Var4 -g 5 -o coeff.json -c ./myhook.py
+rm myhook.py
