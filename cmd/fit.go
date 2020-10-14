@@ -214,7 +214,7 @@ func init() {
 	fitCmd.Flags().StringP("data", "d", "", "Datafile. Should be stored in CSV format")
 	fitCmd.Flags().StringP("target", "y", "lastCol", "Name of the column used as target in the fit")
 	fitCmd.Flags().Float64P("mutrate", "m", 0.5, "Mutation rate in genetic algorithm")
-	fitCmd.Flags().StringP("out", "o", "model.csv", "File where the result of the best model is placed")
+	fitCmd.Flags().StringP("out", "o", "model.json", "File where the result of the best model is placed")
 	fitCmd.Flags().UintP("numgen", "g", 100, "Number of generations to run")
 	fitCmd.Flags().StringP("cost", "c", "aicc", "Cost function (aic|aicc|bic|ebic)")
 	fitCmd.Flags().UintP("csplits", "s", 2, "Number of splits used for cross over operations")
