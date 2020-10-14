@@ -9,7 +9,9 @@ import (
 
 // OrthogonalMatchingPursuit optimizes the cost function by selecting the model that leads to the
 // largest decrease in the cost function
-func OrthogonalMatchingPursuit(X *mat.Dense, y *mat.VecDense, cost CostFunction, maxFeatures int) OptimizeResult {
+func OrthogonalMatchingPursuit(dataset Dataset, cost CostFunction, maxFeatures int) OptimizeResult {
+	X := dataset.X
+	y := dataset.Y
 	Xnorm := mat.DenseCopyOf(X)
 	normalize(Xnorm)
 	_, cols := Xnorm.Dims()
@@ -17,6 +19,7 @@ func OrthogonalMatchingPursuit(X *mat.Dense, y *mat.VecDense, cost CostFunction,
 	proj := mat.NewVecDense(cols, nil)
 
 	selected := []int{}
+	names := []string{}
 	bestScore := math.Inf(1)
 	bestSelection := make([]int, 0, cols)
 	end := maxFeatures
@@ -28,10 +31,11 @@ func OrthogonalMatchingPursuit(X *mat.Dense, y *mat.VecDense, cost CostFunction,
 		proj.MulVec(Xnorm.T(), residuals)
 		best := argAbsMax(proj)
 		selected = append(selected, best)
+		names = append(names, dataset.ColNames[best])
 		sub := subMatrix(Xnorm, selected)
 		tempCoeff := Fit(sub, y)
 
-		score := cost(sub, y, tempCoeff)
+		score := cost(sub, y, tempCoeff, names)
 
 		if score < bestScore {
 			bestScore = score

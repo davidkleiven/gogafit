@@ -73,9 +73,10 @@ func TestCostFuncHook(t *testing.T) {
 	X := mat.NewDense(3, 3, nil)
 	Y := mat.NewVecDense(3, nil)
 	coeff := mat.NewVecDense(3, nil)
+	names := make([]string, 3)
 
 	hook := NewCostFunctionHook(outfile)
-	res := hook.Execute(X, Y, coeff)
+	res := hook.Execute(X, Y, coeff, names)
 
 	tol := 1e-6
 	if math.Abs(res-0.6) > tol {
@@ -89,9 +90,9 @@ func TestModel2JSON(t *testing.T) {
 	X := mat.NewDense(2, 3, []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0})
 	Y := mat.NewVecDense(2, []float64{1.0, 2.0})
 	coeff := mat.NewVecDense(2, []float64{2.0, 3.0})
-	res := model2json(X, Y, coeff)
+	res := model2json(X, Y, coeff, []string{"feat1", "feat2", "feat3"})
 
-	expect := "{\"Rows\":2,\"Cols\":3,\"X\":[1,2,3,4,5,6],\"Y\":[1,2],\"Coeff\":[2,3]}"
+	expect := "{\"Rows\":2,\"Cols\":3,\"X\":[1,2,3,4,5,6],\"Y\":[1,2],\"Coeff\":[2,3],\"Names\":[\"feat1\",\"feat2\",\"feat3\"]}"
 
 	if expect != res {
 		t.Errorf("Expected\n%s\ngot\n%s\n", expect, res)

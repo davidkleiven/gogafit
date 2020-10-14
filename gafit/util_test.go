@@ -363,8 +363,9 @@ func TestGADefaultLogger(t *testing.T) {
 	factory := LinearModelFactory{
 		Config: LinearModelConfig{
 			Data: Dataset{
-				X: mat.NewDense(10, 10, nil),
-				Y: mat.NewVecDense(10, nil),
+				X:        mat.NewDense(10, 10, nil),
+				Y:        mat.NewVecDense(10, nil),
+				ColNames: make([]string, 10),
 			},
 		},
 	}
