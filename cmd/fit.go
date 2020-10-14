@@ -235,7 +235,18 @@ func getCostFunc(name string, numFeat int) gafit.CostFunction {
 	case "ebic":
 		return gafit.NewDefaultEBic(numFeat).Evaluate
 	default:
+		if isScript(name) {
+			hook := gafit.NewCostFunctionHook(name)
+			return hook.Execute
+		}
 		log.Printf("Unknown cost function %s. Using default aicc instead\n", name)
 		return gafit.Aicc
 	}
+}
+
+func isScript(name string) bool {
+	if _, err := os.Stat(name); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
