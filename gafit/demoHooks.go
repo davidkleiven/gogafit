@@ -22,8 +22,9 @@ func DemoCostFuncPython(pyExec string) (string, error) {
 import sys
 import json
 
-def main(arg):
-	args = json.loads(arg)
+def main(arg_file):
+	with open(arg_file, 'r') as infile:
+	    args = json.load(infile)
 
 	# When gogafit calls this script, args will now contain
 	# {
