@@ -76,6 +76,7 @@ func TestCostFuncHook(t *testing.T) {
 	names := make([]string, 3)
 
 	hook := NewCostFunctionHook(outfile)
+	defer hook.Cleanup()
 	res := hook.Execute(X, Y, coeff, names)
 
 	tol := 1e-6

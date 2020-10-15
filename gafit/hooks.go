@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -58,7 +59,15 @@ type Hook struct {
 
 // CostFunctionHook is a type used to represent external cost functions
 type CostFunctionHook struct {
-	Hook Hook
+	Hook    Hook
+	TmpFile string
+}
+
+// Cleanup erases temporary file created by the application
+func (cfh CostFunctionHook) Cleanup() {
+	if _, err := os.Stat(cfh.TmpFile); !os.IsNotExist(err) {
+		os.Remove(cfh.TmpFile)
+	}
 }
 
 // NewCostFunctionHook returns a new instance of a cost function
@@ -68,6 +77,7 @@ func NewCostFunctionHook(script string) CostFunctionHook {
 			Script:  script,
 			Capture: captureCostFuncValue,
 		},
+		TmpFile: ".tmpmodel.json",
 	}
 }
 
@@ -103,7 +113,15 @@ func model2json(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []stri
 func (cfh CostFunctionHook) Execute(X *mat.Dense, y *mat.VecDense, coeff *mat.VecDense, names []string) float64 {
 	strRep := model2json(X, y, coeff, names)
 
-	cmd := exec.Command(cfh.Hook.Script, strRep)
+	// Write result to temp file such that the script can read
+	f, err := os.Create(cfh.TmpFile)
+	if err != nil {
+		panic(err)
+	}
+	f.WriteString(strRep)
+	f.Close()
+
+	cmd := exec.Command(cfh.Hook.Script, cfh.TmpFile)
 	out, err := cmd.Output()
 	if err != nil {
 		msg := fmt.Sprintf("Error when running script: %s\n", err)
