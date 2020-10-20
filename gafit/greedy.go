@@ -32,7 +32,7 @@ func OrthogonalMatchingPursuit(dataset Dataset, cost CostFunction, maxFeatures i
 		best := argAbsMax(proj)
 		selected = append(selected, best)
 		names = append(names, dataset.ColNames[best])
-		sub := subMatrix(Xnorm, selected)
+		sub := subMatrix(X, selected)
 		tempCoeff := Fit(sub, y)
 
 		score := cost(sub, y, tempCoeff, names)
