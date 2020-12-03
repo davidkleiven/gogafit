@@ -9,14 +9,14 @@ go run main.go pred -d $DATAFILE -m coeff.json
 rm "${FOLDER}/dataset_predictions.csv"
 
 echo "Test RMSE"
-go run main.go rmse -d $DATAFILE -y Var4 -m coeff.json
+go run main.go rmse -d $DATAFILE -m coeff.json
 
 echo "Test poly command"
 go run main.go poly -d $DATAFILE -y Var4 -o 3 -p Var
 rm "${FOLDER}/dataset_poly.csv"
 
 echo "Test plot command"
-go run main.go plot -d $DATAFILE -y Var4 -m coeff.json -o plot.png
+go run main.go plot -d $DATAFILE -m coeff.json -o plot.png
 rm coeff.json
 rm plot.png
 
