@@ -1,18 +1,3 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -44,6 +29,7 @@ matrix.
 The coefficient vector is extracted from a csv file of the form (mycoeff.json in the example below)
 
   {
+	"TargetName": "feat3",
 	"Datafile": "gafit/_testdata/dataset.csv",
 	"Coeffs": {
 	  "Var1": 2.9999990000004804,
@@ -61,7 +47,7 @@ data matrix that are not listed, is taken as zero.
 
 Minimal example:
 
-gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
+gogafit rmse -d mydata.csv -c mycoeff,csv
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		dataFile, err := cmd.Flags().GetString("data")
@@ -70,35 +56,22 @@ gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
 			return
 		}
 
-		target, err := cmd.Flags().GetString("target")
-		if err != nil {
-			log.Fatalf("%s\n", err)
-			return
-		}
-
-		target, err = ClosestHeaderName(dataFile, target)
-		if err != nil {
-			log.Fatalf("%s\n", err)
-			return
-		}
-		log.Printf("Using %s as target column\n", target)
-
 		coeffFile, err := cmd.Flags().GetString("model")
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
 		}
 
-		data, err := gafit.Read(dataFile, target)
-
-		if err != nil {
-			log.Fatalf("%s\n", err)
-		}
-
 		model, err := gafit.ReadModel(coeffFile)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
+		}
+
+		data, err := gafit.Read(dataFile, model.TargetName)
+
+		if err != nil {
+			log.Fatalf("%s\n", err)
 		}
 
 		coeffs := model.Coeffs
@@ -135,6 +108,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	rmseCmd.Flags().StringP("data", "d", "", "Csv file with data")
-	rmseCmd.Flags().StringP("target", "y", "", "Name of target column")
 	rmseCmd.Flags().StringP("model", "m", "model.json", "JSON file with fitted model coefficients")
 }

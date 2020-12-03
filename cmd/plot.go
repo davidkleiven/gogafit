@@ -19,9 +19,7 @@ var plotCmd = &cobra.Command{
 If we have the training data in a file called train.csv and validation data in a file
 validate.csv. Our trained model is stored in model.json, it can be plotted by
 
-gogafit plot -d train.csv,validate.csv -m model.json -y target -o plot.png
-
-where target is the name of the target values in the datafiles.
+gogafit plot -d train.csv,validate.csv -m model.json -o plot.png
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		dataFiles, err := cmd.Flags().GetString("data")
@@ -36,12 +34,6 @@ where target is the name of the target values in the datafiles.
 			return
 		}
 
-		target, err := cmd.Flags().GetString("target")
-		if err != nil {
-			log.Fatalf("%s\n", err)
-			return
-		}
-
 		out, err := cmd.Flags().GetString("out")
 		if err != nil {
 			log.Fatalf("%s\n", err)
@@ -50,7 +42,6 @@ where target is the name of the target values in the datafiles.
 
 		// Split dataFiles
 		files := strings.Split(dataFiles, ",")
-		target, err = ClosestHeaderName(files[0], target)
 		if err != nil {
 			log.Fatalf("%s\n", err)
 			return
@@ -69,8 +60,8 @@ where target is the name of the target values in the datafiles.
 			return
 		}
 
-		plt.X.Label.Text = target + " predicted"
-		plt.Y.Label.Text = target + " reference"
+		plt.X.Label.Text = model.TargetName + " predicted"
+		plt.Y.Label.Text = model.TargetName + " reference"
 
 		minValue := 1e100
 		maxValue := -1e100
@@ -78,7 +69,7 @@ where target is the name of the target values in the datafiles.
 		glyphs := NewDefaultGlyphCycle()
 
 		for i, fname := range files {
-			dataset, err := gafit.Read(fname, target)
+			dataset, err := gafit.Read(fname, model.TargetName)
 			if err != nil {
 				log.Fatalf("Dataset %d: %s\n", i, err)
 				return
@@ -143,6 +134,5 @@ func init() {
 
 	plotCmd.Flags().StringP("data", "d", "", "Comma separated list of datasets (e.g. test, train")
 	plotCmd.Flags().StringP("model", "m", "", "JSON file with the model")
-	plotCmd.Flags().StringP("target", "y", "", "Column with target data")
 	plotCmd.Flags().StringP("out", "o", "gogafitPlot.png", "Image file where the model will be stored")
 }

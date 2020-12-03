@@ -111,6 +111,7 @@ matrix.
 The coefficient vector is extracted from a csv file of the form (mycoeff.json in the example below)
 
   {
+	"TargetName": "feat3",
 	"Datafile": "gafit/_testdata/dataset.csv",
 	"Coeffs": {
 	  "Var1": 2.9999990000004804,
@@ -128,16 +129,15 @@ data matrix that are not listed, is taken as zero.
 
 Minimal example:
 
-gogafit rmse -d mydata.csv -t feat3 -c mycoeff,csv
+gogafit rmse -d mydata.csv -c mycoeff,csv
 
 Usage:
   gogafit rmse [flags]
 
 Flags:
-  -d, --data string     Csv file with data
-  -h, --help            help for rmse
-  -m, --model string    JSON file with fitted model coefficients (default "model.json")
-  -y, --target string   Name of target column
+  -d, --data string    Csv file with data
+  -h, --help           help for rmse
+  -m, --model string   JSON file with fitted model coefficients (default "model.json")
 
 Global Flags:
       --config string   config file (default is $HOME/.gogafit.yaml)
@@ -148,19 +148,16 @@ Create a scatter plot of the predictions of one or multiple datasets.
 If we have the training data in a file called train.csv and validation data in a file
 validate.csv. Our trained model is stored in model.json, it can be plotted by
 
-gogafit plot -d train.csv,validate.csv -m model.json -y target -o plot.png
-
-where target is the name of the target values in the datafiles.
+gogafit plot -d train.csv,validate.csv -m model.json -o plot.png
 
 Usage:
   gogafit plot [flags]
 
 Flags:
-  -d, --data string     Comma separated list of datasets (e.g. test, train
-  -h, --help            help for plot
-  -m, --model string    JSON file with the model
-  -o, --out string      Image file where the model will be stored (default "gogafitPlot.png")
-  -y, --target string   Column with target data
+  -d, --data string    Comma separated list of datasets (e.g. test, train
+  -h, --help           help for plot
+  -m, --model string   JSON file with the model
+  -o, --out string     Image file where the model will be stored (default "gogafitPlot.png")
 
 Global Flags:
       --config string   config file (default is $HOME/.gogafit.yaml)
