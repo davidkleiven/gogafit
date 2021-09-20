@@ -54,11 +54,7 @@ gogafit plot -d train.csv,validate.csv -m model.json -o plot.png
 		}
 
 		// Initialize plot
-		plt, err := plot.New()
-		if err != nil {
-			log.Fatalf("%s\n", err)
-			return
-		}
+		plt := plot.New()
 
 		plt.X.Label.Text = model.TargetName + " predicted"
 		plt.Y.Label.Text = model.TargetName + " reference"
