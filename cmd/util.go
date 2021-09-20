@@ -59,7 +59,6 @@ func ReadCoeffs(fname string) (map[string]float64, error) {
 		}
 		coeff[line[0]] = num
 	}
-	return coeff, nil
 }
 
 // ColorCycle is a type that represents a color cycle

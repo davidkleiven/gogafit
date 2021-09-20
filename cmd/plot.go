@@ -63,11 +63,7 @@ where target is the name of the target values in the datafiles.
 		}
 
 		// Initialize plot
-		plt, err := plot.New()
-		if err != nil {
-			log.Fatalf("%s\n", err)
-			return
-		}
+		plt := plot.New()
 
 		plt.X.Label.Text = target + " predicted"
 		plt.Y.Label.Text = target + " reference"
